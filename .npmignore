@@ -1,0 +1,36 @@
+# Source files
+src/
+tests/
+
+# Configuration files
+.eslintrc.js
+.prettierrc.json
+jest.config.js
+tsconfig.json
+
+# OpenSpec project files
+openspec/
+docs/
+AGENTS.md
+.github/
+
+# Git files
+.git
+.gitignore
+
+# Build artifacts
+*.tgz
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
