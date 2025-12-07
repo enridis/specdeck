@@ -1,0 +1,48 @@
+# R1 - Foundation
+
+This release establishes the foundational infrastructure and core functionality for the project.
+
+**Release Goal:** Set up core project infrastructure, implement basic CLI functionality, and establish development workflow.
+
+**Link to Roadmap:** [Project Roadmap](../project-plan.md)
+
+---
+
+## Stories
+
+<!-- Story Table Format:
+Core columns (required):
+- ID: Unique identifier (e.g., SDK-01-01) - serves as universal reference across all repos
+- Title: Brief description of the story
+- Status: planned | in_progress | in_review | blocked | done
+- Complexity: XS | S | M | L | XL
+- Owner: Person or team responsible
+
+Optional columns (use as needed):
+- Estimate: Story points or hours
+- Jira: Jira ticket ID (for projects using Jira)
+- OpenSpec: OpenSpec change ID (for projects using OpenSpec)
+- Tags: Comma-separated tags
+- Description: Detailed explanation
+
+Multi-Repo Pattern:
+- Main repo: Include all columns with Jira/OpenSpec links
+- Other repos: Use same story IDs, omit external tool columns
+- Story ID is the universal identifier across all repositories
+-->
+
+| ID | Title | Status | Complexity | Owner | Description |
+|----|-------|--------|------------|-------|-------------|
+| SDK-01-01 | Set up project repository | done | S | @team | Initialize Git repository, add .gitignore, README, and LICENSE |
+| SDK-01-02 | Implement CLI framework | in_progress | M | @developer | Create basic CLI structure using Commander.js with init, list, and validate commands |
+| SDK-01-03 | Write getting started guide | planned | S | @team | Document installation, basic usage, and common workflows for new users |
+
+---
+
+## Notes
+
+- All stories in this release focus on getting the project ready for external contributors
+- Dependencies: None (this is the foundation release)
+- Target completion: End of Q1 2025
+
+For story management commands, see `specdeck/AGENTS.md` or run `specdeck help`.

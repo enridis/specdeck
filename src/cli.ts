@@ -8,11 +8,13 @@ import { createCreateCommand } from './commands/create';
 import { createProposeCommand } from './commands/propose';
 import { createSyncCommand } from './commands/sync';
 import { createValidateCommand } from './commands/validate';
+import { createInitCommand } from './commands/init';
+import { createUpgradeCommand } from './commands/upgrade';
 
 // Read version from package.json
-const packageJson = JSON.parse(
-  readFileSync(join(__dirname, '../package.json'), 'utf-8')
-) as { version: string };
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
+  version: string;
+};
 
 const program = new Command();
 
@@ -31,7 +33,8 @@ program.addCommand(createCreateCommand());
 program.addCommand(createProposeCommand());
 program.addCommand(createSyncCommand());
 program.addCommand(createValidateCommand());
+program.addCommand(createInitCommand());
+program.addCommand(createUpgradeCommand());
 
 // Parse arguments
 program.parse(process.argv);
-

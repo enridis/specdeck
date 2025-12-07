@@ -64,6 +64,13 @@ timeframe: Q1 2025
   - `specdeck sync` command for interactive status reconciliation
   - Display status hints when showing stories (change exists but story is planned, etc.)
 
+- **COPILOT-01**: GitHub Copilot Integration
+  - VS Code extension providing SpecDeck commands in Copilot Chat
+  - Custom slash commands for OpenSpec workflow (/specdeck-list, /specdeck-sync, etc.)
+  - Context providers for releases, features, and stories
+  - Prompt files for common workflows (create feature, decompose story)
+  - Non-invasive integration that coexists with OpenSpec CLI tools
+
 ## Key Dependencies
 
 ### External Dependencies

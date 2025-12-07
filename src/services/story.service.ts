@@ -5,8 +5,11 @@ import { StoryRepository, StoryFilter } from '../repositories';
 export class StoryService {
   private repository: StoryRepository;
 
-  constructor(openspecDir: string) {
-    const projectPlanPath = join(openspecDir, 'project-plan.md');
+  constructor(openspecDir: string, specdeckDir?: string) {
+    // Use specdeck/releases/R1-foundation.md if specdeckDir is provided, otherwise fall back to legacy path
+    const projectPlanPath = specdeckDir
+      ? join(specdeckDir, 'releases', 'R1-foundation.md')
+      : join(openspecDir, 'project-plan.md');
     this.repository = new StoryRepository(projectPlanPath);
   }
 
@@ -49,7 +52,7 @@ export class StoryService {
     for (const story of stories) {
       byStatus[story.status] = (byStatus[story.status] || 0) + 1;
       byComplexity[story.complexity] = (byComplexity[story.complexity] || 0) + 1;
-      
+
       if (story.estimate) {
         totalPoints += story.estimate;
       }

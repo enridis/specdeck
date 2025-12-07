@@ -13,11 +13,11 @@ export class FeatureService {
   private releaseRepository: ReleaseRepository;
   private storyService: StoryService;
 
-  constructor(openspecDir: string) {
+  constructor(openspecDir: string, specdeckDir?: string) {
     const releasesDir = join(openspecDir, 'releases');
     this.featureRepository = new FeatureRepository();
     this.releaseRepository = new ReleaseRepository(releasesDir);
-    this.storyService = new StoryService(openspecDir);
+    this.storyService = new StoryService(openspecDir, specdeckDir);
   }
 
   /**
@@ -42,14 +42,14 @@ export class FeatureService {
    */
   async getFeaturesByRelease(releaseId: string): Promise<Feature[]> {
     const release = await this.releaseRepository.findById(releaseId);
-    
+
     if (!release) {
       return [];
     }
 
     const releasePath = join(this.releaseRepository['releasesDir'], `${releaseId}.md`);
     const content = readFileSync(releasePath, 'utf-8');
-    
+
     return this.featureRepository.extractFromRelease(content, releaseId);
   }
 
@@ -58,7 +58,7 @@ export class FeatureService {
    */
   async getFeatureWithStories(featureId: string): Promise<FeatureWithStories | null> {
     const allFeatures = await this.listFeatures();
-    const feature = allFeatures.find(f => f.id === featureId);
+    const feature = allFeatures.find((f) => f.id === featureId);
 
     if (!feature) {
       return null;

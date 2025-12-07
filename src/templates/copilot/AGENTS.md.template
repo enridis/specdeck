@@ -1,0 +1,16 @@
+---
+title: SpecDeck Agent Instructions Template
+description: Template for AGENTS.md SpecDeck managed block
+version: 0.1.0
+---
+<!-- SPECDECK:START -->
+# SpecDeck Instructions
+
+For SpecDeck workflow guidance, see prompt files in `.github/prompts/`:
+- @.github/prompts/decompose-feature.prompt.md - Feature decomposition guide
+- @.github/prompts/sync-workflow.prompt.md - Sync story status workflow
+- @.github/prompts/status-reference.prompt.md - Story status reference
+- @.github/prompts/commands-cheatsheet.prompt.md - CLI commands reference
+
+Use `specdeck list`, `specdeck sync status` for project information.
+<!-- SPECDECK:END -->

@@ -1,4 +1,9 @@
-import { StorySchema, StoryStatusSchema, StoryComplexitySchema, StoryIdSchema } from '../../src/schemas/story.schema';
+import {
+  StorySchema,
+  StoryStatusSchema,
+  StoryComplexitySchema,
+  StoryIdSchema,
+} from '../../src/schemas/story.schema';
 
 describe('Story Schema', () => {
   describe('StoryIdSchema', () => {

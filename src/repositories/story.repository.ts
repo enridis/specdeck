@@ -1,4 +1,5 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { Story, StorySchema } from '../schemas';
 import { parseMarkdown, extractTables, parseTableAsObjects } from '../parsers';
 
@@ -21,7 +22,7 @@ export class StoryRepository {
       throw new Error(`Project plan not found: ${this.projectPlanPath}`);
     }
 
-    const content = readFileSync(this.projectPlanPath, 'utf-8');
+    const content = await readFile(this.projectPlanPath, 'utf-8');
     const ast = parseMarkdown(content);
     const tables = extractTables(ast);
 
@@ -44,7 +45,7 @@ export class StoryRepository {
           owner: raw['Owner'] || raw['owner'],
           jira: raw['Jira'] || raw['jira'],
           openspec: raw['OpenSpec'] || raw['openspec'],
-          tags: raw['Tags'] ? raw['Tags'].split(',').map(t => t.trim()) : [],
+          tags: raw['Tags'] ? raw['Tags'].split(',').map((t) => t.trim()) : [],
           notes: raw['Notes'] || raw['notes'],
           milestone: raw['Milestone'] || raw['milestone'],
         });
@@ -64,7 +65,9 @@ export class StoryRepository {
         stories.push(story);
       } catch (error) {
         // Skip invalid stories
-        console.warn(`Skipping invalid story: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.warn(
+          `Skipping invalid story: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
@@ -76,7 +79,7 @@ export class StoryRepository {
    */
   async findById(id: string): Promise<Story | null> {
     const stories = await this.readAll();
-    return stories.find(s => s.id === id) || null;
+    return stories.find((s) => s.id === id) || null;
   }
 
   /**

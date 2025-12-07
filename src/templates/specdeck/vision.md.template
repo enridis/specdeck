@@ -1,0 +1,43 @@
+# Product Vision
+
+This document defines the product vision for your project. It helps align the team on the problem being solved, the solution approach, and success metrics.
+
+## Problem
+
+<!-- Describe the core problem your project solves. Who experiences this problem? What pain points does it address? -->
+
+*Example: Developers struggle with managing complex specifications and keeping them in sync with implementation. Existing tools are either too heavyweight (Jira, Azure DevOps) or too lightweight (markdown files without structure).*
+
+## Solution
+
+<!-- Explain your solution approach. What makes your solution unique or better? What are the key capabilities? -->
+
+*Example: A lightweight CLI tool that combines the simplicity of markdown with structured specification management, enabling spec-driven development without heavy tooling overhead.*
+
+## Target Users
+
+<!-- Who is this project for? What are their key characteristics and needs? -->
+
+*Example: Development teams (2-50 people) who value spec-driven development but want to avoid enterprise project management overhead. Teams already using Git and markdown for documentation.*
+
+## Success Metrics
+
+<!-- How will you measure success? What outcomes indicate the project is achieving its goals? -->
+
+*Example:*
+- *Adoption: 100+ active projects using the tool within 6 months*
+- *Productivity: 30% reduction in spec/implementation drift*
+- *Satisfaction: 4.5+ star rating on feedback surveys*
+
+## Roadmap
+
+<!-- High-level timeline showing major milestones and when you expect to achieve them -->
+
+*Example:*
+- *Q1 2025: Foundation (R1) - Core CLI and basic spec management*
+- *Q2 2025: Advanced Features (R2) - Multi-repo support, CI/CD integration*
+- *Q3 2025: Ecosystem (R3) - Plugins, IDE extensions, community templates*
+
+---
+
+**Reference:** See [SpecDeck's vision](https://github.com/yourusername/specdeck/blob/main/specdeck/vision.md) for a complete example.

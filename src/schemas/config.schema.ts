@@ -14,7 +14,8 @@ export const DefaultsSchema = z.object({
 
 // Main configuration schema
 export const ConfigSchema = z.object({
-  openspecDir: z.string().default('./openspec'),
+  openspecDir: z.string().optional(), // Optional: only needed if using OpenSpec integration
+  specdeckDir: z.string().default('./specdeck'),
   repos: z.array(RepoConfigSchema).default([]),
   defaults: DefaultsSchema.optional(),
 });

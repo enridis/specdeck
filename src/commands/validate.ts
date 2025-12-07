@@ -5,61 +5,72 @@ import { join } from 'path';
 import { ConfigRepository } from '../repositories';
 import { parseMarkdown, extractFrontMatter } from '../parsers';
 
+interface ValidateOptions {
+  strict?: boolean;
+}
+
 export function createValidateCommand(): Command {
-  const validate = new Command('validate')
-    .description('Validate OpenSpec structure and formats');
+  const validate = new Command('validate').description('Validate OpenSpec structure and formats');
 
   // Validate all
   validate
     .command('all')
     .description('Validate all OpenSpec files')
     .option('--strict', 'Enable strict validation')
-    .action(async (options) => {
+    .action(async (options: ValidateOptions) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const openspecDir = config.openspecDir;
+        const specdeckDir = config.specdeckDir;
+        const strict: boolean = Boolean(options.strict);
 
-        console.log(chalk.bold.cyan('\n🔍 OpenSpec Validation\n'));
+        console.log(chalk.bold.cyan('\n🔍 SpecDeck Validation\n'));
 
         let errors = 0;
         let warnings = 0;
 
-        // Validate vision
-        const visionPath = join(openspecDir, 'vision.md');
+        // Validate vision (in specdeck/)
+        const visionPath = join(specdeckDir, 'vision.md');
         if (existsSync(visionPath)) {
-          const result = validateVision(visionPath, options.strict);
+          const result = validateVision(visionPath, strict);
           errors += result.errors;
           warnings += result.warnings;
         } else {
-          console.log(chalk.yellow('⚠ No vision.md found'));
+          console.log(chalk.yellow('⚠ No vision.md found in specdeck/'));
           warnings++;
         }
 
-        // Validate releases
-        const releasesDir = join(openspecDir, 'releases');
-        if (existsSync(releasesDir)) {
-          const releaseFiles = readdirSync(releasesDir).filter(f => f.endsWith('.md'));
-          console.log(chalk.gray(`\nValidating ${releaseFiles.length} release(s)...`));
-          
-          for (const file of releaseFiles) {
-            const result = validateRelease(join(releasesDir, file), options.strict);
-            if (result.errors > 0 || result.warnings > 0) {
-              console.log(chalk.gray(`  ${file}: ${result.errors} error(s), ${result.warnings} warning(s)`));
-            }
-            errors += result.errors;
-            warnings += result.warnings;
-          }
-        }
-
-        // Validate project plan
-        const projectPlanPath = join(openspecDir, 'project-plan.md');
+        // Validate project plan (in specdeck/)
+        const projectPlanPath = join(specdeckDir, 'project-plan.md');
         if (existsSync(projectPlanPath)) {
-          const result = validateProjectPlan(projectPlanPath, options.strict);
+          const result = validateProjectPlan(projectPlanPath, strict);
           errors += result.errors;
           warnings += result.warnings;
         } else {
-          console.log(chalk.yellow('⚠ No project-plan.md found'));
+          console.log(chalk.yellow('⚠ No project-plan.md found in specdeck/'));
           warnings++;
+        }
+
+        // Validate OpenSpec if available
+        if (config.openspecDir && existsSync(config.openspecDir)) {
+          console.log(chalk.gray('\n📦 Validating OpenSpec integration...\n'));
+
+          // Validate releases
+          const releasesDir = join(config.openspecDir, 'releases');
+          if (existsSync(releasesDir)) {
+            const releaseFiles = readdirSync(releasesDir).filter((f) => f.endsWith('.md'));
+            console.log(chalk.gray(`Validating ${releaseFiles.length} release(s)...`));
+
+            for (const file of releaseFiles) {
+              const result = validateRelease(join(releasesDir, file), strict);
+              if (result.errors > 0 || result.warnings > 0) {
+                console.log(
+                  chalk.gray(`  ${file}: ${result.errors} error(s), ${result.warnings} warning(s)`)
+                );
+              }
+              errors += result.errors;
+              warnings += result.warnings;
+            }
+          }
         }
 
         // Summary
@@ -74,7 +85,9 @@ export function createValidateCommand(): Command {
           process.exit(1);
         }
       } catch (error) {
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+          chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         process.exit(1);
       }
     });
@@ -88,14 +101,13 @@ function validateVision(path: string, _strict: boolean): { errors: number; warni
 
   try {
     const content = readFileSync(path, 'utf-8');
-    const ast = parseMarkdown(content);
-    const frontMatter = extractFrontMatter(ast);
 
     console.log(chalk.gray('\nValidating vision.md...'));
 
-    if (!frontMatter) {
-      console.log(chalk.red('  ✗ Missing YAML front matter'));
-      errors++;
+    // Vision.md is a freeform document, just check it has some content
+    if (content.trim().length < 100) {
+      console.log(chalk.yellow('  ⚠ Vision document is very short'));
+      warnings++;
     }
 
     if (content.includes('[TODO]') || content.includes('[PLACEHOLDER]')) {
@@ -107,7 +119,11 @@ function validateVision(path: string, _strict: boolean): { errors: number; warni
       console.log(chalk.green('  ✓ vision.md is valid'));
     }
   } catch (error) {
-    console.log(chalk.red(`  ✗ Failed to validate: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    console.log(
+      chalk.red(
+        `  ✗ Failed to validate: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    );
     errors++;
   }
 
@@ -157,17 +173,29 @@ function validateProjectPlan(path: string, _strict: boolean): { errors: number; 
 
   try {
     const content = readFileSync(path, 'utf-8');
-    
+
     console.log(chalk.gray('\nValidating project-plan.md...'));
 
-    if (!content.includes('|')) {
-      console.log(chalk.red('  ✗ No story table found'));
-      errors++;
-    } else {
+    // project-plan.md is now a roadmap, check for release sections
+    if (!content.includes('## R')) {
+      console.log(chalk.yellow('  ⚠ No release sections found (expected ## R1, ## R2, etc.)'));
+      warnings++;
+    }
+
+    if (!content.includes('Status:')) {
+      console.log(chalk.yellow('  ⚠ No release status information found'));
+      warnings++;
+    }
+
+    if (errors === 0 && warnings === 0) {
       console.log(chalk.green('  ✓ project-plan.md is valid'));
     }
   } catch (error) {
-    console.log(chalk.red(`  ✗ Failed to validate: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    console.log(
+      chalk.red(
+        `  ✗ Failed to validate: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    );
     errors++;
   }
 

@@ -7,11 +7,14 @@
     "specdeck": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-templates",
+    "copy-templates": "mkdir -p dist/templates/copilot/prompts dist/templates/specdeck/releases && cp -r src/templates/copilot/* dist/templates/copilot/ && cp -r src/templates/specdeck/* dist/templates/specdeck/",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:functional": "tests/functional/bug-fixes.sh",
+    "test:all": "npm test && npm run test:functional",
     "lint": "eslint src tests --ext .ts",
     "lint:fix": "eslint src tests --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",

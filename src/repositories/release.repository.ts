@@ -1,4 +1,5 @@
-import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { existsSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { Release, ReleaseSchema } from '../schemas';
 import { parseMarkdown, extractFrontMatter } from '../parsers';
@@ -31,7 +32,9 @@ export class ReleaseRepository {
           releases.push(release);
         }
       } catch (error) {
-        console.warn(`Failed to read release ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.warn(
+          `Failed to read release ${file}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
@@ -54,7 +57,7 @@ export class ReleaseRepository {
       return null;
     }
 
-    const content = readFileSync(filePath, 'utf-8');
+    const content = await readFile(filePath, 'utf-8');
     const ast = parseMarkdown(content);
     const frontMatter = extractFrontMatter<Record<string, unknown>>(ast);
 

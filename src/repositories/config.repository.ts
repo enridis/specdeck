@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { Config, ConfigSchema } from '../schemas';
 
@@ -18,11 +19,13 @@ export class ConfigRepository {
     }
 
     try {
-      const content = readFileSync(configPath, 'utf-8');
-      const rawConfig = JSON.parse(content);
+      const content = await readFile(configPath, 'utf-8');
+      const rawConfig: unknown = JSON.parse(content);
       return ConfigSchema.parse(rawConfig);
     } catch (error) {
-      throw new Error(`Failed to read config: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to read config: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -31,13 +34,15 @@ export class ConfigRepository {
    */
   async write(config: Config): Promise<void> {
     const configPath = join(this.rootPath, ConfigRepository.CONFIG_FILE);
-    
+
     try {
       const validated = ConfigSchema.parse(config);
       const content = JSON.stringify(validated, null, 2);
-      writeFileSync(configPath, content, 'utf-8');
+      await writeFile(configPath, content, 'utf-8');
     } catch (error) {
-      throw new Error(`Failed to write config: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to write config: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -46,7 +51,7 @@ export class ConfigRepository {
    */
   private getDefaultConfig(): Config {
     return {
-      openspecDir: './openspec',
+      specdeckDir: './specdeck',
       repos: [],
     };
   }

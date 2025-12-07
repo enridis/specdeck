@@ -2,19 +2,16 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import { Root, Content, Heading, Table, Yaml } from 'mdast';
+import { Root, Content, Table, Yaml } from 'mdast';
 import { parse as parseYaml } from 'yaml';
 
 /**
  * Parse markdown content into an AST
  */
 export function parseMarkdown(content: string): Root {
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkFrontmatter, ['yaml']);
-  
-  return processor.parse(content) as Root;
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ['yaml']);
+
+  return processor.parse(content);
 }
 
 /**
@@ -22,15 +19,17 @@ export function parseMarkdown(content: string): Root {
  */
 export function extractFrontMatter<T = Record<string, unknown>>(ast: Root): T | null {
   const yamlNode = ast.children.find((node): node is Yaml => node.type === 'yaml');
-  
+
   if (!yamlNode) {
     return null;
   }
-  
+
   try {
     return parseYaml(yamlNode.value) as T;
   } catch (error) {
-    throw new Error(`Failed to parse YAML front matter: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to parse YAML front matter: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -39,19 +38,19 @@ export function extractFrontMatter<T = Record<string, unknown>>(ast: Root): T | 
  */
 export function extractHeadings(ast: Root): Array<{ depth: number; text: string }> {
   const headings: Array<{ depth: number; text: string }> = [];
-  
+
   function visit(node: Content) {
     if (node.type === 'heading') {
-      const heading = node as Heading;
+      const heading = node;
       const text = extractTextFromNode(heading);
       headings.push({ depth: heading.depth, text });
     }
-    
+
     if ('children' in node) {
       (node.children as Content[]).forEach(visit);
     }
   }
-  
+
   ast.children.forEach(visit);
   return headings;
 }
@@ -63,13 +62,16 @@ function extractTextFromNode(node: Content): string {
   if (node.type === 'text') {
     return node.value;
   }
-  
-  if ('children' in node) {
-    return (node.children as Content[])
-      .map(extractTextFromNode)
-      .join('');
+
+  // Handle inline code nodes (backticks)
+  if (node.type === 'inlineCode') {
+    return 'value' in node ? String(node.value) : '';
   }
-  
+
+  if ('children' in node) {
+    return (node.children as Content[]).map(extractTextFromNode).join('');
+  }
+
   return '';
 }
 
@@ -80,28 +82,28 @@ export function findSection(ast: Root, headingText: string): Content[] {
   let capturing = false;
   let targetDepth = 0;
   const sectionContent: Content[] = [];
-  
+
   for (const node of ast.children) {
     if (node.type === 'heading') {
-      const heading = node as Heading;
+      const heading = node;
       const text = extractTextFromNode(heading);
-      
+
       if (text === headingText) {
         capturing = true;
         targetDepth = heading.depth;
         continue;
       }
-      
+
       if (capturing && heading.depth <= targetDepth) {
         break;
       }
     }
-    
+
     if (capturing) {
       sectionContent.push(node);
     }
   }
-  
+
   return sectionContent;
 }
 
@@ -110,17 +112,17 @@ export function findSection(ast: Root, headingText: string): Content[] {
  */
 export function extractTables(ast: Root): Table[] {
   const tables: Table[] = [];
-  
+
   function visit(node: Content) {
     if (node.type === 'table') {
-      tables.push(node as Table);
+      tables.push(node);
     }
-    
+
     if ('children' in node) {
       (node.children as Content[]).forEach(visit);
     }
   }
-  
+
   ast.children.forEach(visit);
   return tables;
 }
@@ -129,8 +131,8 @@ export function extractTables(ast: Root): Table[] {
  * Convert a GFM table to a 2D array of strings
  */
 export function tableToArray(table: Table): string[][] {
-  return table.children.map(row => {
-    return row.children.map(cell => {
+  return table.children.map((row) => {
+    return row.children.map((cell) => {
       return cell.children.map(extractTextFromNode).join('');
     });
   });
@@ -141,15 +143,15 @@ export function tableToArray(table: Table): string[][] {
  */
 export function parseTableAsObjects<T = Record<string, string>>(table: Table): T[] {
   const rows = tableToArray(table);
-  
+
   if (rows.length < 2) {
     return [];
   }
-  
+
   const headers = rows[0];
   const dataRows = rows.slice(1);
-  
-  return dataRows.map(row => {
+
+  return dataRows.map((row) => {
     const obj: Record<string, string> = {};
     headers.forEach((header, index) => {
       obj[header] = row[index] || '';

@@ -16,3 +16,22 @@ Use `@/openspec/AGENTS.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+
+---
+title: SpecDeck Agent Instructions Template
+description: Template for AGENTS.md SpecDeck managed block
+version: 0.1.0
+---
+<!-- SPECDECK:START -->
+# SpecDeck Instructions
+
+For SpecDeck workflow guidance, see prompt files in `.github/prompts/`:
+- @.github/prompts/specdeck-decompose.prompt.md - Feature decomposition guide
+- @.github/prompts/specdeck-sync.prompt.md - Sync story status workflow
+- @.github/prompts/specdeck-status.prompt.md - Story status reference
+- @.github/prompts/specdeck-commands.prompt.md - CLI commands reference
+
+Use `specdeck list`, `specdeck sync status` for project information.
+
+**Two-Tier Planning:** SpecDeck uses `specdeck/project-plan.md` (roadmap) and `specdeck/releases/R*.md` (detailed stories). See `@specdeck/AGENTS.md` for full details on the structure.
+<!-- SPECDECK:END -->

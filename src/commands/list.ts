@@ -1,26 +1,49 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { ConfigRepository } from '../repositories';
-import { StoryService, ReleaseService, FeatureService } from '../services';
+import { StoryService, ReleaseService, FeatureService, FeatureWithStories } from '../services';
+import { Feature } from '../schemas';
+
+interface ListReleasesOptions {
+  withFeatures?: boolean;
+}
+
+interface ListFeaturesOptions {
+  release?: string;
+  withStories?: boolean;
+}
+
+interface ListStoriesOptions {
+  status?: string[];
+  complexity?: string[];
+  feature?: string;
+  owner?: string;
+  stats?: boolean;
+}
+
+interface GlobalOptions {
+  json?: boolean;
+}
 
 export function createListCommand(): Command {
-  const list = new Command('list')
-    .description('List releases, features, or stories');
+  const list = new Command('list').description('List releases, features, or stories');
 
   // List releases
   list
     .command('releases')
     .description('List all releases')
     .option('--with-features', 'Include feature details')
-    .action(async (options) => {
+    .action(async (options: ListReleasesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const releaseService = new ReleaseService(config.openspecDir);
+        const openspecDir = config.openspecDir || './openspec';
+        const releaseService = new ReleaseService(openspecDir);
+        const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         if (options.withFeatures) {
           const releases = await releaseService.listReleasesWithFeatures();
-          
-          if (options.parent?.parent?.opts().json) {
+
+          if (globalOpts.json) {
             console.log(JSON.stringify(releases, null, 2));
           } else {
             for (const release of releases) {
@@ -36,8 +59,8 @@ export function createListCommand(): Command {
           }
         } else {
           const releases = await releaseService.listReleases();
-          
-          if (options.parent?.parent?.opts().json) {
+
+          if (globalOpts.json) {
             console.log(JSON.stringify(releases, null, 2));
           } else {
             console.log(chalk.bold('\nReleases:'));
@@ -50,7 +73,9 @@ export function createListCommand(): Command {
           }
         }
       } catch (error) {
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+          chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         process.exit(1);
       }
     });
@@ -61,12 +86,14 @@ export function createListCommand(): Command {
     .description('List all features')
     .option('-r, --release <releaseId>', 'Filter by release ID')
     .option('--with-stories', 'Include story details')
-    .action(async (options) => {
+    .action(async (options: ListFeaturesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const featureService = new FeatureService(config.openspecDir);
+        const openspecDir = config.openspecDir || './openspec';
+        const featureService = new FeatureService(openspecDir, config.specdeckDir);
+        const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
-        let features;
+        let features: Feature[] | FeatureWithStories[];
         if (options.release) {
           features = await featureService.getFeaturesByRelease(options.release);
         } else if (options.withStories) {
@@ -75,14 +102,14 @@ export function createListCommand(): Command {
           features = await featureService.listFeatures();
         }
 
-        if (options.parent?.parent?.opts().json) {
+        if (globalOpts.json) {
           console.log(JSON.stringify(features, null, 2));
         } else {
           console.log(chalk.bold('\nFeatures:'));
           for (const feature of features) {
             console.log(chalk.cyan(`\n  ${feature.id}: ${feature.title}`));
             console.log(chalk.gray(`    Release: ${feature.releaseId}`));
-            
+
             if ('stories' in feature && Array.isArray(feature.stories)) {
               console.log(chalk.yellow(`    Stories (${feature.stories.length}):`));
               for (const story of feature.stories) {
@@ -92,7 +119,9 @@ export function createListCommand(): Command {
           }
         }
       } catch (error) {
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+          chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         process.exit(1);
       }
     });
@@ -101,31 +130,36 @@ export function createListCommand(): Command {
   list
     .command('stories')
     .description('List all stories')
-    .option('-s, --status <status...>', 'Filter by status (planned, in_progress, in_review, blocked, done)')
+    .option(
+      '-s, --status <status...>',
+      'Filter by status (planned, in_progress, in_review, blocked, done)'
+    )
     .option('-c, --complexity <complexity...>', 'Filter by complexity (XS, S, M, L, XL)')
     .option('-f, --feature <featureId>', 'Filter by feature ID')
     .option('-o, --owner <owner>', 'Filter by owner')
     .option('--stats', 'Show statistics')
-    .action(async (options) => {
+    .action(async (options: ListStoriesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const storyService = new StoryService(config.openspecDir);
+        const openspecDir = config.openspecDir || './openspec';
+        const storyService = new StoryService(openspecDir, config.specdeckDir);
+        const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         if (options.stats) {
           const stats = await storyService.getStatistics();
-          
-          if (options.parent?.parent?.opts().json) {
+
+          if (globalOpts.json) {
             console.log(JSON.stringify(stats, null, 2));
           } else {
             console.log(chalk.bold('\nStory Statistics:'));
             console.log(chalk.cyan(`  Total Stories: ${stats.total}`));
             console.log(chalk.cyan(`  Total Story Points: ${stats.totalPoints}`));
-            
+
             console.log(chalk.yellow('\n  By Status:'));
             for (const [status, count] of Object.entries(stats.byStatus)) {
               console.log(`    ${status}: ${count}`);
             }
-            
+
             console.log(chalk.yellow('\n  By Complexity:'));
             for (const [complexity, count] of Object.entries(stats.byComplexity)) {
               console.log(`    ${complexity}: ${count}`);
@@ -141,13 +175,15 @@ export function createListCommand(): Command {
 
           const stories = await storyService.listStories(filter);
 
-          if (options.parent?.parent?.opts().json) {
+          if (globalOpts.json) {
             console.log(JSON.stringify(stories, null, 2));
           } else {
             console.log(chalk.bold(`\nStories (${stories.length}):`));
             for (const story of stories) {
               console.log(chalk.cyan(`\n  ${story.id}: ${story.title}`));
-              console.log(chalk.gray(`    Status: ${story.status} | Complexity: ${story.complexity}`));
+              console.log(
+                chalk.gray(`    Status: ${story.status} | Complexity: ${story.complexity}`)
+              );
               if (story.estimate) {
                 console.log(chalk.gray(`    Estimate: ${story.estimate} points`));
               }
@@ -158,7 +194,9 @@ export function createListCommand(): Command {
           }
         }
       } catch (error) {
-        console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        console.error(
+          chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        );
         process.exit(1);
       }
     });

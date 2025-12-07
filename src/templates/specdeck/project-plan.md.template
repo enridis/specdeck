@@ -1,0 +1,52 @@
+# Project Roadmap
+
+This file provides a high-level overview of your project releases. Each release links to a detailed story file in the `releases/` directory.
+
+**Two-Tier Planning Structure:**
+- **This file (project-plan.md)**: High-level roadmap with release summaries, goals, and story counts
+- **releases/R*.md**: Detailed story tables per release (editable story tracking)
+
+SpecDeck commands auto-detect the active release (first with `status: in_progress`) and operate on it by default. Use `--release R1` to target a specific release or `--all` to operate across all releases.
+
+---
+
+## R1 - Foundation
+**Status:** in_progress  
+**Timeline:** Q1 2025  
+**Stories:** 3 total, 1 done, 1 in progress  
+**Details:** [R1 Stories](./releases/R1-foundation.md)
+
+**Goals:**
+- Set up core project infrastructure
+- Implement basic CLI functionality
+- Establish development workflow
+- Create initial documentation
+
+---
+
+## R2 - Advanced Features
+**Status:** planned  
+**Timeline:** Q2 2025  
+**Stories:** 0 total, 0 done  
+**Details:** [R2 Stories](./releases/R2-features.md)
+
+**Goals:**
+- Add advanced validation
+- Implement multi-repository support
+- CI/CD integration
+- Performance optimizations
+
+---
+
+## Managing Releases
+
+**Commands:**
+- `specdeck list stories` - Shows active release stories
+- `specdeck list stories --release R1` - Shows specific release
+- `specdeck list stories --all` - Shows all releases (including archived)
+- `specdeck sync status` - Updates active release
+
+**Archiving:**
+When a release is complete, move its file to `releases/archive/` and update its status to `done`.
+
+For more information, see [SpecDeck documentation](../../README.md).

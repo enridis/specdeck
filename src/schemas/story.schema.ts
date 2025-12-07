@@ -1,13 +1,7 @@
 import { z } from 'zod';
 
 // Story status enum
-export const StoryStatusSchema = z.enum([
-  'planned',
-  'in_progress',
-  'in_review',
-  'blocked',
-  'done',
-]);
+export const StoryStatusSchema = z.enum(['planned', 'in_progress', 'in_review', 'blocked', 'done']);
 
 // Story complexity enum
 export const StoryComplexitySchema = z.enum(['XS', 'S', 'M', 'L', 'XL']);

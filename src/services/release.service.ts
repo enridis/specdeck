@@ -36,7 +36,7 @@ export class ReleaseService {
    */
   async getReleaseWithFeatures(id: string): Promise<ReleaseWithFeatures | null> {
     const release = await this.releaseRepository.findById(id);
-    
+
     if (!release) {
       return null;
     }
