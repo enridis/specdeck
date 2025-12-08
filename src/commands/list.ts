@@ -36,8 +36,8 @@ export function createListCommand(): Command {
     .action(async (options: ListReleasesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const openspecDir = config.openspecDir || './openspec';
-        const releaseService = new ReleaseService(openspecDir);
+        const specdeckDir = config.specdeckDir || './specdeck';
+        const releaseService = new ReleaseService(specdeckDir);
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         if (options.withFeatures) {
@@ -89,8 +89,8 @@ export function createListCommand(): Command {
     .action(async (options: ListFeaturesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const openspecDir = config.openspecDir || './openspec';
-        const featureService = new FeatureService(openspecDir, config.specdeckDir);
+        const specdeckDir = config.specdeckDir || './specdeck';
+        const featureService = new FeatureService(specdeckDir);
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         let features: Feature[] | FeatureWithStories[];
@@ -141,8 +141,8 @@ export function createListCommand(): Command {
     .action(async (options: ListStoriesOptions, cmd: Command) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const openspecDir = config.openspecDir || './openspec';
-        const storyService = new StoryService(openspecDir, config.specdeckDir);
+        const specdeckDir = config.specdeckDir || './specdeck';
+        const storyService = new StoryService(specdeckDir);
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         if (options.stats) {

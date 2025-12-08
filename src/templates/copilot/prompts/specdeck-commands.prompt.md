@@ -29,7 +29,6 @@ specdeck init copilot
   - `AGENTS.md` - OpenSpec workflow instructions
 - `.github/prompts/` - Copilot prompt templates
   - `specdeck-decompose.prompt.md`
-  - `specdeck-sync.prompt.md`
   - `specdeck-status.prompt.md`
   - `specdeck-commands.prompt.md`
 - `.specdeck.config.json` - Configuration file
@@ -148,65 +147,6 @@ specdeck list stories -f CLI-CORE --release R1 --json
 
 ---
 
-## Sync Commands
-
-### Check Sync Status
-
-Check for stories that may need status updates (useful with OpenSpec integration):
-
-```bash
-specdeck sync status
-```
-
-**Output**: List of stories with suggested status changes
-
-**What it checks**:
-- Stories linked to archived OpenSpec changes (if using OpenSpec integration)
-- Current vs suggested status
-- Reason for suggested update
-
-**Common flags**:
-- `--json` - Output as JSON
-
-**Examples**:
-```bash
-# Check sync status
-specdeck sync status
-
-# JSON output for automation
-specdeck sync status --json
-```
-
-**Use when**:
-- After archiving OpenSpec changes (if using OpenSpec)
-- Before sprint reviews
-- Weekly status checks
-- When statuses feel out of date
-
-**Note:** This command is most useful when using SpecDeck with OpenSpec integration. For standalone usage, manually update story statuses as work progresses.
-
----
-- Updates or creates `AGENTS.md` with SpecDeck section
-- Creates `.specdeck-version` file
-
-**Templates installed**:
-- `decompose-feature.prompt.md`
-- `sync-workflow.prompt.md`
-- `status-reference.prompt.md`
-- `commands-cheatsheet.prompt.md`
-
-**Use when**:
-- Setting up new SpecDeck project
-- Adding Copilot guidance to existing project
-- First time using SpecDeck in a repository
-
-**Notes**:
-- Safe to run multiple times (idempotent)
-- Won't overwrite existing templates
-- Updates AGENTS.md managed block only
-
----
-
 ## Upgrade Commands
 
 ### Upgrade Copilot Templates
@@ -238,7 +178,7 @@ specdeck upgrade copilot
 specdeck upgrade copilot --force
 
 # Upgrade specific template
-specdeck upgrade copilot --template sync-workflow
+specdeck upgrade copilot --template decompose
 
 # List available templates
 specdeck upgrade copilot --list
@@ -266,7 +206,7 @@ Available on all commands:
 ```bash
 # Get help for any command
 specdeck list features --help
-specdeck sync --help
+specdeck migrate --help
 
 # Check CLI version
 specdeck --version
@@ -284,9 +224,6 @@ specdeck list stories --feature MY-FEATURE
 
 # 2. Update story status in project-plan.md as you work
 # (manual edit)
-
-# 3. Check if anything needs syncing
-specdeck sync status
 ```
 
 ### Sprint Planning
@@ -301,22 +238,6 @@ specdeck list stories --feature FEATURE-02
 
 # 3. Identify work for sprint
 # (use output to plan)
-```
-
-### After Archiving OpenSpec Change
-
-```bash
-# 1. Check which stories need updating
-specdeck sync status
-
-# 2. Review each story mentioned
-
-# 3. Update statuses in project-plan.md
-# (manual edit)
-
-# 4. Verify sync
-specdeck sync status
-# Should show: ✅ All stories are in sync
 ```
 
 ### Setting Up Copilot
@@ -364,12 +285,6 @@ specdeck list features --json | jq -r '.[].id'
 specdeck list stories --json | jq 'group_by(.status) | map({status: .[0].status, count: length})'
 ```
 
-### Check if Sync Needed
-
-```bash
-specdeck sync status --json | jq '.needsUpdate'
-```
-
 ### List Stories for Feature
 
 ```bash
@@ -403,14 +318,12 @@ Add to your `.bashrc` or `.zshrc`:
 alias sd='specdeck'
 alias sdlf='specdeck list features'
 alias sdls='specdeck list stories'
-alias sdsync='specdeck sync status'
 ```
 
 Usage:
 ```bash
 sd list features
 sdls -f CLI-CORE
-sdsync
 ```
 
 ### Checking Installed Version
@@ -427,7 +340,7 @@ specdeck --help
 
 # Command-specific help
 specdeck list --help
-specdeck sync --help
+specdeck migrate --help
 specdeck init --help
 specdeck upgrade --help
 ```
@@ -437,16 +350,14 @@ specdeck upgrade --help
 ## Quick Reference Table
 
 | Command | Purpose | Common Usage |
-|---------|---------|--------------|
+|---------|---------|--------------|  
 | `list releases` | Show releases | Planning |
 | `list features` | Show features | Sprint planning |
 | `list stories` | Show stories | Daily work |
 | `list stories -f ID` | Filter by feature | Focus on area |
-| `sync status` | Check sync | After archiving |
+| `migrate` | Consolidate files | After split structure |
 | `init copilot` | Install templates | Project setup |
-| `upgrade copilot` | Update templates | Maintenance |
-
-## File Locations
+| `upgrade copilot` | Update templates | Maintenance |## File Locations
 
 | File | Purpose |
 |------|---------|

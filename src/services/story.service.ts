@@ -5,12 +5,10 @@ import { StoryRepository, StoryFilter } from '../repositories';
 export class StoryService {
   private repository: StoryRepository;
 
-  constructor(openspecDir: string, specdeckDir?: string) {
-    // Use specdeck/releases/R1-foundation.md if specdeckDir is provided, otherwise fall back to legacy path
-    const projectPlanPath = specdeckDir
-      ? join(specdeckDir, 'releases', 'R1-foundation.md')
-      : join(openspecDir, 'project-plan.md');
-    this.repository = new StoryRepository(projectPlanPath);
+  constructor(specdeckDir: string) {
+    // Use feature-based structure: specdeck/releases/R1-foundation/ directory
+    const releasesDir = join(specdeckDir, 'releases');
+    this.repository = new StoryRepository(releasesDir);
   }
 
   /**

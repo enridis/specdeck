@@ -64,31 +64,9 @@ else
   exit 1
 fi
 
-# Test 6: Sync status detects archived changes
+# Test 6: Multiple command types support JSON
 echo ""
-echo "Test 6: Sync status detects archived changes"
-output=$(node dist/cli.js sync status 2>/dev/null)
-if echo "$output" | grep -q "story/stories need status updates"; then
-  echo "✅ PASS: Sync detects archived changes"
-else
-  echo "❌ FAIL: Sync doesn't detect archived changes"
-  exit 1
-fi
-
-# Test 7: Sync shows correct suggestions
-echo ""
-echo "Test 7: Sync suggests done status for archived changes"
-output=$(node dist/cli.js sync status 2>/dev/null)
-if echo "$output" | grep -q "planned → done"; then
-  echo "✅ PASS: Sync suggests correct status"
-else
-  echo "❌ FAIL: Sync doesn't suggest correct status"
-  exit 1
-fi
-
-# Test 8: Multiple command types support JSON
-echo ""
-echo "Test 8: All list commands support --json"
+echo "Test 6: All list commands support --json"
 for cmd in "releases" "features"; do
   output=$(node dist/cli.js list $cmd --json 2>/dev/null)
   if echo "$output" | jq . > /dev/null 2>&1; then
@@ -99,9 +77,9 @@ for cmd in "releases" "features"; do
   fi
 done
 
-# Test 9: Features are parsed from bullet list format
+# Test 7: Features are parsed from bullet list format
 echo ""
-echo "Test 9: Features extracted from release bullet lists"
+echo "Test 7: Features extracted from release bullet lists"
 output=$(node dist/cli.js list features --json 2>/dev/null)
 feature_count=$(echo "$output" | jq 'length' 2>/dev/null)
 if [ "$feature_count" -gt 0 ]; then
@@ -111,9 +89,9 @@ else
   exit 1
 fi
 
-# Test 10: Feature details include description from nested bullets
+# Test 8: Feature details include description from nested bullets
 echo ""
-echo "Test 10: Feature descriptions extracted from nested bullet lists"
+echo "Test 8: Feature descriptions extracted from nested bullet lists"
 output=$(node dist/cli.js list features --json 2>/dev/null)
 has_description=$(echo "$output" | jq '.[0] | has("description") and (.description | length > 0)' 2>/dev/null)
 if [ "$has_description" = "true" ]; then

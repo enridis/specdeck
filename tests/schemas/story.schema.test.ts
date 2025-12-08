@@ -55,6 +55,8 @@ describe('Story Schema', () => {
     const validStory = {
       id: 'CLI-CORE-001',
       title: 'Implement CLI framework',
+      featureId: 'CLI-CORE',
+      releaseId: 'R1-foundation',
       status: 'planned' as const,
       complexity: 'M' as const,
     };

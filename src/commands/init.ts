@@ -55,7 +55,6 @@ function initCopilot(): void {
   // 2. Copy template files
   const templateFiles = [
     'specdeck-decompose.prompt.md',
-    'specdeck-sync.prompt.md',
     'specdeck-status.prompt.md',
     'specdeck-commands.prompt.md',
   ];

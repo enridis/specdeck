@@ -13,11 +13,11 @@ export class FeatureService {
   private releaseRepository: ReleaseRepository;
   private storyService: StoryService;
 
-  constructor(openspecDir: string, specdeckDir?: string) {
-    const releasesDir = join(openspecDir, 'releases');
+  constructor(specdeckDir: string) {
+    const releasesDir = join(specdeckDir, 'releases');
     this.featureRepository = new FeatureRepository();
     this.releaseRepository = new ReleaseRepository(releasesDir);
-    this.storyService = new StoryService(openspecDir, specdeckDir);
+    this.storyService = new StoryService(specdeckDir);
   }
 
   /**

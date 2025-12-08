@@ -11,8 +11,8 @@ export class ReleaseService {
   private releaseRepository: ReleaseRepository;
   private featureRepository: FeatureRepository;
 
-  constructor(openspecDir: string) {
-    const releasesDir = join(openspecDir, 'releases');
+  constructor(specdeckDir: string) {
+    const releasesDir = join(specdeckDir, 'releases');
     this.releaseRepository = new ReleaseRepository(releasesDir);
     this.featureRepository = new FeatureRepository();
   }

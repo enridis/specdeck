@@ -15,6 +15,8 @@ export const StoryIdSchema = z
 export const StorySchema = z.object({
   id: StoryIdSchema,
   title: z.string().min(1, 'Title cannot be empty'),
+  featureId: z.string().min(1, 'Feature ID is required'), // Explicit hierarchy link
+  releaseId: z.string().min(1, 'Release ID is required'), // Explicit hierarchy link
   status: StoryStatusSchema,
   complexity: StoryComplexitySchema,
   estimate: z.number().optional(),

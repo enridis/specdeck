@@ -27,8 +27,8 @@ export function createProposeCommand(): Command {
     .action(async (featureId: string, options: ProposeOptions) => {
       try {
         const config = await new ConfigRepository(process.cwd()).read();
-        const openspecDir = config.openspecDir || './openspec';
-        const featureService = new FeatureService(openspecDir, config.specdeckDir);
+        const specdeckDir = config.specdeckDir || './specdeck';
+        const featureService = new FeatureService(specdeckDir);
 
         const feature = await featureService.getFeatureWithStories(featureId);
 

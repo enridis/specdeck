@@ -21,7 +21,18 @@ export class ConfigRepository {
     try {
       const content = await readFile(configPath, 'utf-8');
       const rawConfig: unknown = JSON.parse(content);
-      return ConfigSchema.parse(rawConfig);
+      const config = ConfigSchema.parse(rawConfig);
+
+      // Deprecation warning for openspecDir
+      if (config.openspecDir) {
+        console.warn('\x1b[33m⚠️  Warning: openspecDir is deprecated.\x1b[0m');
+        console.warn(
+          '\x1b[2m   Use specdeckDir for all planning artifacts (releases, features, stories).\x1b[0m'
+        );
+        console.warn('\x1b[2m   Run `specdeck migrate` to consolidate folder structure.\x1b[0m\n');
+      }
+
+      return config;
     } catch (error) {
       throw new Error(
         `Failed to read config: ${error instanceof Error ? error.message : 'Unknown error'}`
