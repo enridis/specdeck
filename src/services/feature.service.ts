@@ -89,4 +89,22 @@ export class FeatureService {
 
     return withStories;
   }
+
+  /**
+   * Get features for a specific release with their stories
+   */
+  async getFeaturesByReleaseWithStories(releaseId: string): Promise<FeatureWithStories[]> {
+    const features = await this.getFeaturesByRelease(releaseId);
+    const withStories: FeatureWithStories[] = [];
+
+    for (const feature of features) {
+      const stories = await this.storyService.getStoriesByFeature(feature.id);
+      withStories.push({
+        ...feature,
+        stories,
+      });
+    }
+
+    return withStories;
+  }
 }

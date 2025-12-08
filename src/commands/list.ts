@@ -18,6 +18,8 @@ interface ListStoriesOptions {
   complexity?: string[];
   feature?: string;
   owner?: string;
+  release?: string;
+  milestone?: string;
   stats?: boolean;
 }
 
@@ -94,7 +96,9 @@ export function createListCommand(): Command {
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         let features: Feature[] | FeatureWithStories[];
-        if (options.release) {
+        if (options.release && options.withStories) {
+          features = await featureService.getFeaturesByReleaseWithStories(options.release);
+        } else if (options.release) {
           features = await featureService.getFeaturesByRelease(options.release);
         } else if (options.withStories) {
           features = await featureService.listFeaturesWithStories();
@@ -113,7 +117,11 @@ export function createListCommand(): Command {
             if ('stories' in feature && Array.isArray(feature.stories)) {
               console.log(chalk.yellow(`    Stories (${feature.stories.length}):`));
               for (const story of feature.stories) {
-                console.log(`      • ${story.id}: ${story.title} [${story.complexity}]`);
+                console.log(`      • ${story.id}: ${story.title} [${story.complexity}] (${story.status})`);
+                if (story?.owner) console.log(`        Owner: "${story.owner}"`);
+                if (story?.estimate) console.log(`        Estimate: ${story.estimate} points`);
+                if (story?.milestone) console.log(`        Milestone: "${story.milestone}"`);
+
               }
             }
           }
@@ -136,6 +144,8 @@ export function createListCommand(): Command {
     )
     .option('-c, --complexity <complexity...>', 'Filter by complexity (XS, S, M, L, XL)')
     .option('-f, --feature <featureId>', 'Filter by feature ID')
+    .option('-r, --release <releaseId>', 'Filter by release ID')
+    .option('-m, --milestone <milestone>', 'Filter by milestone')
     .option('-o, --owner <owner>', 'Filter by owner')
     .option('--stats', 'Show statistics')
     .action(async (options: ListStoriesOptions, cmd: Command) => {
@@ -170,6 +180,8 @@ export function createListCommand(): Command {
             status: options.status,
             complexity: options.complexity,
             feature: options.feature,
+            release: options.release,
+            milestone: options.milestone,
             owner: options.owner,
           };
 
@@ -189,6 +201,9 @@ export function createListCommand(): Command {
               }
               if (story.owner) {
                 console.log(chalk.gray(`    Owner: ${story.owner}`));
+              }
+              if (story.milestone) {
+                console.log(chalk.gray(`    Milestone: ${story.milestone}`));
               }
             }
           }
