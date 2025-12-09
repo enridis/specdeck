@@ -117,11 +117,12 @@ export function createListCommand(): Command {
             if ('stories' in feature && Array.isArray(feature.stories)) {
               console.log(chalk.yellow(`    Stories (${feature.stories.length}):`));
               for (const story of feature.stories) {
-                console.log(`      • ${story.id}: ${story.title} [${story.complexity}] (${story.status})`);
+                console.log(
+                  `      • ${story.id}: ${story.title} [${story.complexity}] (${story.status})`
+                );
                 if (story?.owner) console.log(`        Owner: "${story.owner}"`);
                 if (story?.estimate) console.log(`        Estimate: ${story.estimate} points`);
                 if (story?.milestone) console.log(`        Milestone: "${story.milestone}"`);
-
               }
             }
           }

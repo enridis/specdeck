@@ -1,6 +1,7 @@
 ---
 feature: CLI-CORE
 release: R1-foundation
+jira_epic: DECK-100
 ---
 
 # Feature: CLI-CORE

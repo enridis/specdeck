@@ -1,6 +1,7 @@
 import { join } from 'path';
-import { readFileSync } from 'fs';
-import { Feature, Story } from '../schemas';
+import { readFileSync, mkdirSync, existsSync } from 'fs';
+import { readFile, writeFile, unlink } from 'fs/promises';
+import { Feature, Story, FeatureSchema } from '../schemas';
 import { FeatureRepository, ReleaseRepository } from '../repositories';
 import { StoryService } from './story.service';
 
@@ -106,5 +107,249 @@ export class FeatureService {
     }
 
     return withStories;
+  }
+
+  /**
+   * Create a new feature in a release
+   */
+  async createFeature(feature: Omit<Feature, 'storyCount'>): Promise<Feature> {
+    const validated = FeatureSchema.parse({ ...feature, storyCount: 0 });
+
+    const releasePath = join(this.releaseRepository['releasesDir'], `${validated.releaseId}.md`);
+    const featureFilePath = join(
+      this.releaseRepository['releasesDir'],
+      validated.releaseId,
+      `${validated.id}.md`
+    );
+
+    // Check if release exists
+    if (!existsSync(releasePath)) {
+      throw new Error(`Release ${validated.releaseId} not found`);
+    }
+
+    // Check if feature already exists
+    if (existsSync(featureFilePath)) {
+      throw new Error(`Feature ${validated.id} already exists`);
+    }
+
+    // Read release file
+    const content = await readFile(releasePath, 'utf-8');
+
+    // Add feature to release file
+    const updatedContent = this.addFeatureToReleaseContent(content, validated);
+
+    // Write atomically
+    const tempPath = `${releasePath}.tmp`;
+    await writeFile(tempPath, updatedContent, 'utf-8');
+    await writeFile(releasePath, updatedContent, 'utf-8');
+    await unlink(tempPath).catch(() => {});
+
+    // Create feature file
+    const featureDir = join(this.releaseRepository['releasesDir'], validated.releaseId);
+    if (!existsSync(featureDir)) {
+      mkdirSync(featureDir, { recursive: true });
+    }
+
+    const featureFileContent = this.generateFeatureFileContent(validated);
+    await writeFile(featureFilePath, featureFileContent, 'utf-8');
+
+    return validated;
+  }
+
+  /**
+   * Update an existing feature
+   */
+  async updateFeature(id: string, updates: Partial<Feature>): Promise<Feature> {
+    const existing = await this.getFeatureWithStories(id);
+    if (!existing) {
+      throw new Error(`Feature ${id} not found`);
+    }
+
+    const updated = FeatureSchema.parse({
+      ...existing,
+      ...updates,
+      id: existing.id, // Prevent ID changes
+      releaseId: existing.releaseId, // Prevent release changes
+    });
+
+    const releasePath = join(this.releaseRepository['releasesDir'], `${updated.releaseId}.md`);
+    const content = await readFile(releasePath, 'utf-8');
+
+    // Update feature in release file
+    const updatedContent = this.updateFeatureInReleaseContent(content, updated);
+
+    // Write atomically
+    const tempPath = `${releasePath}.tmp`;
+    await writeFile(tempPath, updatedContent, 'utf-8');
+    await writeFile(releasePath, updatedContent, 'utf-8');
+    await unlink(tempPath).catch(() => {});
+
+    return updated;
+  }
+
+  /**
+   * Delete a feature
+   */
+  async deleteFeature(id: string): Promise<void> {
+    const feature = await this.getFeatureWithStories(id);
+    if (!feature) {
+      throw new Error(`Feature ${id} not found`);
+    }
+
+    // Check if feature has stories
+    if (feature.stories && feature.stories.length > 0) {
+      throw new Error(
+        `Cannot delete feature ${id}: it has ${feature.stories.length} stories. Delete stories first.`
+      );
+    }
+
+    const releasePath = join(this.releaseRepository['releasesDir'], `${feature.releaseId}.md`);
+    const content = await readFile(releasePath, 'utf-8');
+
+    // Remove feature from release file
+    const updatedContent = this.removeFeatureFromReleaseContent(content, id);
+
+    // Write atomically
+    const tempPath = `${releasePath}.tmp`;
+    await writeFile(tempPath, updatedContent, 'utf-8');
+    await writeFile(releasePath, updatedContent, 'utf-8');
+    await unlink(tempPath).catch(() => {});
+
+    // Delete feature file if it exists
+    const featureFilePath = join(
+      this.releaseRepository['releasesDir'],
+      feature.releaseId,
+      `${id}.md`
+    );
+    if (existsSync(featureFilePath)) {
+      await unlink(featureFilePath);
+    }
+  }
+
+  /**
+   * Add a feature to release markdown content
+   */
+  private addFeatureToReleaseContent(content: string, feature: Feature): string {
+    const lines = content.split('\n');
+
+    // Find the Features section
+    let featuresIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].match(/^##\s+Features\s*$/i)) {
+        featuresIndex = i;
+        break;
+      }
+    }
+
+    if (featuresIndex === -1) {
+      // No Features section, add it at the end
+      return (
+        content +
+        `\n\n## Features\n\n- **${feature.id}**: ${feature.title}\n${feature.description ? `  - ${feature.description}\n` : ''}`
+      );
+    }
+
+    // Find where to insert (after the Features heading and any existing content)
+    let insertIndex = featuresIndex + 1;
+
+    // Skip empty lines after the heading
+    while (insertIndex < lines.length && lines[insertIndex].trim() === '') {
+      insertIndex++;
+    }
+
+    // Insert the new feature
+    const featureLines = [`- **${feature.id}**: ${feature.title}`];
+    if (feature.description) {
+      featureLines.push(`  - ${feature.description}`);
+    }
+
+    lines.splice(insertIndex, 0, ...featureLines, '');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Update a feature in release markdown content
+   */
+  private updateFeatureInReleaseContent(content: string, feature: Feature): string {
+    const lines = content.split('\n');
+
+    // Find the feature line
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^-\s+\*\*([A-Z]+-[A-Z0-9]+)\*\*:/);
+      if (match && match[1] === feature.id) {
+        // Update the feature line
+        lines[i] = `- **${feature.id}**: ${feature.title}`;
+
+        // Update or remove description line
+        if (i + 1 < lines.length && lines[i + 1].match(/^\s+-\s+/)) {
+          if (feature.description) {
+            lines[i + 1] = `  - ${feature.description}`;
+          } else {
+            lines.splice(i + 1, 1);
+          }
+        } else if (feature.description) {
+          lines.splice(i + 1, 0, `  - ${feature.description}`);
+        }
+
+        break;
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Remove a feature from release markdown content
+   */
+  private removeFeatureFromReleaseContent(content: string, featureId: string): string {
+    const lines = content.split('\n');
+
+    // Find and remove the feature lines
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^-\s+\*\*([A-Z]+-[A-Z0-9]+)\*\*:/);
+      if (match && match[1] === featureId) {
+        // Remove the feature line
+        lines.splice(i, 1);
+
+        // Remove description line if it exists
+        if (i < lines.length && lines[i].match(/^\s+-\s+/)) {
+          lines.splice(i, 1);
+        }
+
+        // Remove trailing empty line if present
+        if (i < lines.length && lines[i].trim() === '') {
+          lines.splice(i, 1);
+        }
+
+        break;
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Generate feature file content
+   */
+  private generateFeatureFileContent(feature: Feature): string {
+    return `---
+release: ${feature.releaseId}
+feature: ${feature.id}
+---
+
+# Feature: ${feature.id}
+
+## Description
+
+${feature.title}
+${feature.description ? `\n${feature.description}` : ''}
+
+## Stories
+
+| ID | Title | Status | Complexity | Estimate | Owner | Milestone | Jira | OpenSpec | Tags | Notes |
+|----|-------|--------|------------|----------|-------|-----------|------|----------|------|-------|
+
+`;
   }
 }

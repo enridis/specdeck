@@ -68,4 +68,25 @@ export class ReleaseService {
 
     return withFeatures;
   }
+
+  /**
+   * Create a new release
+   */
+  async createRelease(release: Release): Promise<Release> {
+    return this.releaseRepository.create(release);
+  }
+
+  /**
+   * Update an existing release
+   */
+  async updateRelease(id: string, updates: Partial<Release>): Promise<Release> {
+    return this.releaseRepository.update(id, updates);
+  }
+
+  /**
+   * Delete a release
+   */
+  async deleteRelease(id: string): Promise<void> {
+    return this.releaseRepository.delete(id);
+  }
 }

@@ -20,7 +20,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ---
 title: SpecDeck Agent Instructions Template
 description: Template for AGENTS.md SpecDeck managed block
-version: 0.1.0
+version: 0.2.0
 ---
 <!-- SPECDECK:START -->
 # SpecDeck Instructions

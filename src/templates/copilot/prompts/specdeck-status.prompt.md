@@ -1,7 +1,7 @@
 ---
 title: Story Status Reference
 description: Complete reference for story status values and transitions
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Story Status Reference

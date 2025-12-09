@@ -111,6 +111,7 @@ timeframe: Q1 2025
 ---
 feature: CLI-CORE
 release: R1-foundation
+jira_epic: PROJ-123
 ---
 
 # Feature: CLI-CORE
@@ -135,6 +136,9 @@ CLI Entry Point and Command Framework
 **YAML Front Matter (Required):**
 - `feature`: Feature ID (matches filename)
 - `release`: Release ID (matches parent directory)
+
+**YAML Front Matter (Optional):**
+- `jira_epic`: Jira Epic key for tracking this feature (e.g., `PROJ-123`)
 
 ---
 

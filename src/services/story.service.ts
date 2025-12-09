@@ -40,11 +40,19 @@ export class StoryService {
     byStatus: Record<string, number>;
     byComplexity: Record<string, number>;
     totalPoints: number;
+    pointsByStatus: Record<string, number>;
   }> {
     const stories = await this.listStories();
 
     const byStatus: Record<string, number> = {};
     const byComplexity: Record<string, number> = {};
+    const pointsByStatus: Record<string, number> = {
+      done: 0,
+      in_progress: 0,
+      planned: 0,
+      in_review: 0,
+      blocked: 0,
+    };
     let totalPoints = 0;
 
     for (const story of stories) {
@@ -53,6 +61,9 @@ export class StoryService {
 
       if (story.estimate) {
         totalPoints += story.estimate;
+        if (Object.prototype.hasOwnProperty.call(pointsByStatus, story.status)) {
+          pointsByStatus[story.status] += story.estimate;
+        }
       }
     }
 
@@ -61,6 +72,28 @@ export class StoryService {
       byStatus,
       byComplexity,
       totalPoints,
+      pointsByStatus,
     };
+  }
+
+  /**
+   * Create a new story
+   */
+  async createStory(story: Story): Promise<Story> {
+    return this.repository.create(story);
+  }
+
+  /**
+   * Update an existing story
+   */
+  async updateStory(id: string, updates: Partial<Story>): Promise<Story> {
+    return this.repository.update(id, updates);
+  }
+
+  /**
+   * Delete a story
+   */
+  async deleteStory(id: string): Promise<void> {
+    return this.repository.delete(id);
   }
 }

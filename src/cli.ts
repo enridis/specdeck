@@ -10,6 +10,7 @@ import { createValidateCommand } from './commands/validate';
 import { createInitCommand } from './commands/init';
 import { createUpgradeCommand } from './commands/upgrade';
 import { createMigrateCommand } from './commands/migrate';
+import { createServeCommand } from './commands/serve';
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
@@ -35,6 +36,7 @@ program.addCommand(createValidateCommand());
 program.addCommand(createInitCommand());
 program.addCommand(createUpgradeCommand());
 program.addCommand(createMigrateCommand());
+program.addCommand(createServeCommand());
 
 // Parse arguments
 program.parse(process.argv);

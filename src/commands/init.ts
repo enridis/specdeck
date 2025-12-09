@@ -82,7 +82,7 @@ function initCopilot(): void {
   // 4. Create version file
   // Version is hardcoded to match package.json
   const versionInfo: VersionInfo = {
-    version: '0.1.0',
+    version: '0.2.0',
     timestamp: new Date().toISOString(),
     specdeckFiles,
     templates: copiedFiles,

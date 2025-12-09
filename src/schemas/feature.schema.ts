@@ -11,6 +11,7 @@ export const FeatureSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty'),
   description: z.string().optional(),
   releaseId: z.string(),
+  jiraEpic: z.string().optional(),
   openspecChange: z.string().optional(),
   repos: z.array(z.string()).default([]),
   storyCount: z.number().default(0),

@@ -1,7 +1,7 @@
 ---
 title: SpecDeck Commands Cheatsheet
 description: Quick reference for all SpecDeck CLI commands
-version: 0.1.0
+version: 0.2.0
 ---
 
 # SpecDeck Commands Cheatsheet

@@ -1,15 +1,17 @@
 {
   "name": "specdeck",
-  "version": "0.1.0",
-  "description": "CLI tool for managing OpenSpec-Driven Delivery workflows",
+  "version": "0.2.0",
+  "description": "Git-based project planning with Markdown files and web UI",
   "main": "dist/index.js",
   "bin": {
     "specdeck": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && npm run copy-templates",
+    "build": "tsc && npm run copy-templates && npm run build:ui",
+    "build:ui": "cd ui && npm run build",
     "copy-templates": "mkdir -p dist/templates/copilot/prompts dist/templates/specdeck/releases && cp -r src/templates/copilot/* dist/templates/copilot/ && cp -r src/templates/specdeck/* dist/templates/specdeck/",
     "dev": "tsc --watch",
+    "dev:ui": "cd ui && npm run dev",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -20,7 +22,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "prepublishOnly": "npm run build",
-    "cli": "node dist/cli.js"
+    "cli": "node dist/cli.js",
+    "serve": "node dist/cli.js serve"
   },
   "keywords": [
     "openspec",
@@ -36,14 +39,19 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@types/express": "^5.0.6",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "open": "^11.0.0",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.4",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/jest": "^29.5.11",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.10.6",

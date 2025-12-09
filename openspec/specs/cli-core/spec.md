@@ -27,32 +27,22 @@ The CLI MUST provide a hierarchical command structure using Commander.js with su
 **And** exits with code 1
 
 ### Requirement: Global Error Handling
-The CLI MUST catch and format all errors consistently with actionable messages and appropriate exit codes.
 
-#### Scenario: File not found error
-**Given** a command expects to read `openspec/releases/R1.md`
-**And** the file does not exist
-**When** the command executes
-**Then** the CLI displays "Error: Release 'R1' not found"
-**And** shows expected file location "Expected: openspec/releases/R1.md"
-**And** suggests running `specdeck releases list` to see available releases
-**And** exits with code 1
+**Modification:** The global error handler MUST handle server-specific errors.
 
-#### Scenario: Validation error
-**Given** a command parses `project-plan.md`
-**And** line 42 contains an invalid story ID "bad-id"
-**When** the command executes
-**Then** the CLI displays "Error: Invalid project-plan.md at line 42"
-**And** shows the specific validation issue "Story ID 'bad-id' does not match pattern [A-Z]+-[A-Z0-9]+-\d+"
-**And** provides an example "Example: FND-01-01"
-**And** exits with code 1
+**New Acceptance Criteria:**
+- Server startup errors are caught and displayed clearly
+- Port binding errors suggest solutions (try different port)
+- Missing directory errors suggest running `specdeck init`
+- Server runtime errors are logged but don't crash the process
 
-#### Scenario: Unexpected error
-**Given** an unexpected exception occurs during command execution
-**When** the error is caught by global handler
-**Then** the CLI displays "Unexpected error: <error message>"
-**And** logs stack trace if `--verbose` flag is set
-**And** exits with code 1
+#### Scenario: Handle server error gracefully
+
+**Given** the server encounters a runtime error  
+**When** processing a request  
+**Then** the error is logged with stack trace  
+**And** the server continues running  
+**And** the client receives 500 Internal Server Error response
 
 ### Requirement: Output Formatting
 The CLI MUST support both human-readable table format and machine-readable JSON format for all data retrieval commands.
@@ -114,4 +104,84 @@ The CLI MUST support a `--verbose` flag that enables detailed logging for troubl
 **And** logs service calls and data transformations
 **And** outputs the final result
 **And** exits with code 0
+
+### Requirement: Serve Command Implementation
+
+The CLI MUST provide a `serve` command that starts the web server.
+
+**Acceptance Criteria:**
+- Command located in `src/commands/serve.ts`
+- Command creates Express server with API routes
+- Command serves static frontend from `dist/ui/` (unless --api-only)
+- Command opens browser automatically if `--open` flag provided
+- Command validates that `specdeck/` directory exists before starting
+- Command shows clear error if port is already in use
+- Command handles Ctrl+C gracefully with cleanup
+
+#### Scenario: Start server successfully
+
+**Given** the user is in a directory with `specdeck/` folder  
+**And** port 3000 is available  
+**When** the user runs `specdeck serve`  
+**Then** the server starts  
+**And** the console shows:
+```
+✓ SpecDeck server running at http://localhost:3000
+  Press Ctrl+C to stop
+```
+**And** the server responds to API requests
+
+#### Scenario: Handle missing specdeck directory
+
+**Given** the user is in a directory without `specdeck/` folder  
+**When** the user runs `specdeck serve`  
+**Then** the command exits with error  
+**And** the console shows: "Error: specdeck/ directory not found. Run 'specdeck init' first."
+
+#### Scenario: Handle port already in use
+
+**Given** port 3000 is already in use by another process  
+**When** the user runs `specdeck serve`  
+**Then** the command exits with error  
+**And** the console shows: "Error: Port 3000 is already in use. Try a different port with --port"
+
+#### Scenario: Open browser automatically
+
+**Given** the user wants to open the UI immediately  
+**When** the user runs `specdeck serve --open`  
+**Then** the server starts  
+**And** the default browser opens to `http://localhost:3000`
+
+#### Scenario: Graceful shutdown
+
+**Given** the server is running  
+**When** the user presses Ctrl+C  
+**Then** the console shows: "Shutting down server..."  
+**And** the server closes all connections  
+**And** the process exits cleanly
+
+### Requirement: Configuration Integration
+
+The serve command MUST respect existing SpecDeck configuration.
+
+**Acceptance Criteria:**
+- Reads `specdeckDir` from `.specdeck.config.json` if present
+- Defaults to `./specdeck` if no config
+- Uses existing ConfigRepository for discovery
+- Supports multi-repo configuration (serves first repo by default)
+
+#### Scenario: Use custom specdeck directory
+
+**Given** `.specdeck.config.json` contains `{"specdeckDir": "./custom-specdeck"}`  
+**When** the user runs `specdeck serve`  
+**Then** the server reads data from `./custom-specdeck/`  
+**And** the console shows the correct directory path
+
+#### Scenario: Multi-repo support (future)
+
+**Given** the config has multiple repos  
+**When** the user runs `specdeck serve`  
+**Then** the server serves the first repo by default  
+**And** the console shows which repo is being served  
+**Note:** Full multi-repo UI is out of scope for v1
 

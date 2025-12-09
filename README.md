@@ -15,37 +15,89 @@ SpecDeck enables teams to navigate and maintain the hierarchy of **Vision → Re
 
 ## Status
 
-✅ **Released (v0.1.0)** - Foundation complete, all R1 stories implemented
+✅ **Released (v0.1.0)** - Foundation complete, all R1 stories implemented  
+✅ **Released (v0.2.0)** - Web UI Mode with full CRUD operations
 
 ## Quick Links
 
 - **Vision**: [specdeck/vision.md](specdeck/vision.md) - Product vision and roadmap
 - **Project Roadmap**: [specdeck/project-plan.md](specdeck/project-plan.md) - High-level release overview
-- **Current Release**: [R1 - Foundation](specdeck/releases/R1-foundation.md) - Q1 2025 detailed stories (In Progress)
+- **Releases**: 
+  - [R1 - Foundation](specdeck/releases/R1-foundation.md) - CLI core (Complete ✅)
+  - [R2 - Web UI](specdeck/releases/R2-webui.md) - Interactive interface (Complete ✅)
 
 ## Commands
 
 SpecDeck provides the following commands:
 
+### Web UI Mode
+
+Launch an interactive web interface for managing releases, features, and stories:
+
+```bash
+# Start the web server (default: http://localhost:3000)
+specdeck serve
+
+# Custom port
+specdeck serve --port 8080
+
+# Custom host (for network access)
+specdeck serve --host 0.0.0.0 --port 3000
+
+# Open browser automatically
+specdeck serve --open
+
+# API-only mode (no UI, just REST endpoints)
+specdeck serve --api-only
+```
+
+**Features:**
+- 📊 **Dashboard** - Overview of releases, features, and story statistics
+- 📝 **CRUD Operations** - Create, read, update, and delete releases/features/stories
+- 🎯 **Interactive Forms** - User-friendly forms with validation
+- 🔍 **Filtering & Search** - Filter stories by status, complexity, feature
+- 📁 **File Sync** - All changes persist to Markdown files immediately
+- ⚡ **Fast & Lightweight** - Vite-powered React UI with hot reload
+
+**Use Cases:**
+- Quick status updates without editing Markdown
+- Bulk story creation through forms
+- Visual hierarchy navigation (Release → Feature → Story)
+- Non-technical stakeholder access (PMs, designers)
+- Real-time statistics and progress tracking
+
+**Troubleshooting:**
+- **Port in use**: Use `--port` to specify different port
+- **Directory not found**: Run `specdeck init copilot` first to create `specdeck/` directory
+- **Changes not saved**: Check file permissions in `specdeck/` directory
+- **UI not loading**: Try `npm run build` to rebuild the UI bundle
+
 ### Story Management
 ```bash
-# List features and stories
-specdeck list features                    # List all features in current release
+# List releases, features, and stories
+specdeck list releases                    # List all releases
+specdeck list releases --with-features    # Include feature counts
+
+specdeck list features                    # List features in active release
+specdeck list features --release <id>     # List features in specific release
+specdeck list features --with-stories     # Include story details
+
 specdeck list stories                     # List all stories
-specdeck list stories --feature <id>      # List stories for specific feature
-specdeck list releases                    # List available releases
-
-# Optional: Sync story status with OpenSpec changes (if using OpenSpec integration)
-specdeck sync status                      # Check which stories need status updates
-```
-
-### Project Initialization
+specdeck list stories --feature <id>      # Filter by feature
+### Project Initialization & Creation
 ```bash
 # Initialize SpecDeck project structure
-specdeck init copilot                     # Creates specdeck/, openspec/, and .github/prompts/
+specdeck init copilot                     # Creates specdeck/ directory and .github/prompts/
+
+# Create new releases and features
+specdeck create release <id> <title>      # Create a new release
+specdeck create feature <id> <title> --release <releaseId>  # Create a new feature
+
+# Propose new changes (OpenSpec integration)
+specdeck propose <changeName>             # Create OpenSpec change proposal
 ```
 
-The init command scaffolds:
+The `init copilot` command scaffolds:
 - **specdeck/** directory with:
   - `project-plan.md` - High-level roadmap
   - `releases/R1-foundation.md` - Detailed story tracking
@@ -53,28 +105,48 @@ The init command scaffolds:
   - `AGENTS.md` - SpecDeck CLI instructions for AI assistants
 - **Copilot prompt templates** in `.github/prompts/`:
   - specdeck-decompose.prompt.md - Break features into stories
-  - specdeck-sync.prompt.md - Update story statuses
   - specdeck-status.prompt.md - Story status reference
   - specdeck-commands.prompt.md - CLI commands cheatsheet
 
-**Note:** OpenSpec is not required. If you want to use OpenSpec framework integration, you can manually create an `openspec/` directory and configure it in `.specdeck.config.json`.
-
-### Template Management
+**Note:** OpenSpec integration is optional. The tool works standalone for pure story tracking.
+  - `AGENTS.md` - SpecDeck CLI instructions for AI assistants
+- **Copilot prompt templates** in `.github/prompts/`:
+  - specdeck-decompose.prompt.md - Break features into stories
+### Validation & Utilities
 ```bash
+# Validate project structure
+specdeck validate                         # Validate all SpecDeck files
+specdeck validate --fix                   # Auto-fix common issues
+
 # Upgrade templates to latest version
 specdeck upgrade copilot                  # Upgrade all templates (with backup)
 specdeck upgrade copilot --list           # Show available templates and versions
 specdeck upgrade copilot --template <name>  # Upgrade specific template only
 specdeck upgrade copilot --force          # Skip backup before upgrade
-```
 
-### Global Options
+# Migrate project structure
+specdeck migrate                          # Migrate to latest SpecDeck format
 ```bash
---json                                    # Output as JSON
---verbose                                 # Detailed logging
---help                                    # Show help
-```
+## Tech Stack
 
+**Backend:**
+- **TypeScript** - Type-safe implementation
+- **Commander.js** - CLI framework
+- **Express.js** - Web server for UI mode
+- **unified + remark** - Markdown parsing with AST
+- **Zod** - Schema validation and runtime type checking
+- **Jest** - Testing framework
+- **cli-table3** - Table formatting for terminal output
+- **chalk** - Terminal colors and styling
+- **cors** - CORS middleware for API
+
+**Frontend (Web UI):**
+- **React 18** - UI framework
+- **Vite** - Build tool and dev server
+- **TypeScript** - Type-safe components
+- **Tailwind CSS** - Utility-first styling
+- **React Router** - Client-side routing
+```
 ## Tech Stack
 
 - **TypeScript** - Type-safe implementation
@@ -82,6 +154,10 @@ specdeck upgrade copilot --force          # Skip backup before upgrade
 - **unified + remark** - Markdown parsing with AST
 - **Zod** - Schema validation and types
 - **Jest** - Testing framework
+- **cli-table3** - Table formatting for terminal output
+- **Express.js** - Web server for UI mode (v0.2.0+)
+- **React 18 + Vite** - Interactive web UI (v0.2.0+)
+- **Tailwind CSS** - Utility-first styling (v0.2.0+)
 - **cli-table3** - Table formatting for terminal output
 
 ## Project Structure
@@ -114,32 +190,39 @@ specdeck/
 │       └── ...
 ├── .github/
 │   └── prompts/                  # GitHub Copilot prompt templates
-└── src/                          # Source code
-    ├── cli.ts                    # CLI entry point
-    ├── commands/                 # Command implementations
-    ├── parsers/                  # Markdown parsing
-    ├── repositories/             # Data access
-    ├── services/                 # Business logic
-    ├── schemas/                  # Zod validation
-    ├── templates/                # Scaffolding templates
-    │   ├── specdeck/             # SpecDeck directory templates
-    │   ├── openspec/             # OpenSpec directory templates
-    │   └── copilot/              # Copilot prompt templates
-    └── utils/                    # Utilities
-```
+**Key Architecture Patterns:**
+- **Two-Tier Planning:** `project-plan.md` (roadmap) + `releases/R*.md` (detailed stories)
+- **Feature-Based Files:** Stories grouped by feature in `releases/R*/FEATURE.md`
+- **Repository Pattern:** Clean separation between data access and business logic
+- **Schema Validation:** Zod schemas ensure data consistency
+- **REST API:** Express.js backend with JSON responses
+- **File-Based Storage:** All data persists in Git-tracked Markdown files
 
-**Two-Tier Planning:**
-- `specdeck/project-plan.md` - High-level roadmap with release summaries
-- `specdeck/releases/R*.md` - Detailed per-release story tables
-- Commands auto-detect active release and operate on it by default
+**Story Table Structure:**
+- Core columns: ID, Title, Status, Complexity, Owner, Description
+## Integration Options
 
-**Optional Columns for External Tool Integration:**
-- Story tables include core columns (ID, Title, Status, Complexity, Owner, Description)
-- Optionally add: Estimate, Jira (ticket ID), OpenSpec (change ID), Tags, Notes
-- Multi-repo projects use Story ID as universal identifier across repositories
+**Standalone Mode (Recommended):**
+- Use SpecDeck for Git-based story tracking and project planning
+- No external dependencies required
+- All data in Markdown files under version control
+- Perfect for teams wanting lightweight, file-based planning
 
-## OpenSpec Integration (Optional)
+**Optional Integrations:**
+- **OpenSpec Framework:** Link stories to change proposals via `openspec` column
+- **Jira:** Track external ticket IDs in `jira` column
+- **Multi-repo:** Use universal story IDs across repositories
 
+**This Project's Workflow:**
+1. Vision and release objectives defined in `specdeck/`
+2. Features decomposed into user stories
+3. Stories tracked through status transitions
+4. Web UI provides quick updates and visualizations
+5. All changes committed to Git for audit trail
+
+**Release History:**
+- **R1 Foundation (v0.1.0):** CLI core, story management, parsing - Complete ✅
+- **R2 Web UI (v0.2.0):** Express.js backend, React frontend, CRUD operations - Complete ✅
 SpecDeck can work standalone or integrate with the OpenSpec-Driven Delivery framework:
 
 **Standalone Mode:**
@@ -172,13 +255,24 @@ This project itself uses OpenSpec integration as a reference implementation:
 - [x] OpenSpec change archived: `add-cli-basic-foundation`
 - [x] GitHub Copilot integration added
 
-### Current Phase: Enhancement 🚧
-- Working on GitHub Copilot integration improvements
-- Exploring additional workflow automation
-- Gathering feedback from early usage
+### Completed: R2 Web UI ✅
+- [x] Web server with Express.js backend
+- [x] React 18 + Vite frontend with Tailwind CSS
+- [x] Full CRUD operations for releases, features, and stories
+- [x] Interactive dashboard with statistics
+- [x] REST API endpoints
+- [x] File synchronization with Markdown
+- [x] All lint and build issues resolved
+
+### Current Phase: Maintenance & Refinement 🔧
+- Monitoring production usage
+- Code quality improvements and type safety
+- Gathering feedback from users
+- Planning future enhancements
 
 ### Future Phases
-- v0.2.0: Enhanced Copilot integration
+- v0.3.0: Advanced filtering and search
+- v0.4.0: Collaboration features
 - Pilot with external teams
 - npm publication and distribution
 
@@ -186,9 +280,15 @@ This project itself uses OpenSpec integration as a reference implementation:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd specdeck
+## Contributing
 
+Both R1 Foundation and R2 Web UI are complete. The project is now in maintenance mode with focus on stability and bug fixes. Contributions are welcome for:
+
+- Bug fixes and stability improvements
+- Documentation enhancements
+- Performance optimizations
+- New filtering and search capabilities
+- Integration with other tools
 # Install dependencies
 npm install
 

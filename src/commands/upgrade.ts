@@ -50,7 +50,7 @@ function upgradeCopilot(options: { force?: boolean; template?: string; list?: bo
   const currentVersionInfo = JSON.parse(readFileSync(versionFile, 'utf-8')) as VersionInfo;
 
   // Bundled version (matches package.json)
-  const bundledVersion = '0.1.0';
+  const bundledVersion = '0.2.0';
 
   // Check if upgrade needed
   if (currentVersionInfo.version === bundledVersion && !options.template) {
@@ -139,7 +139,7 @@ function listTemplates(cwd: string): void {
   }
 
   // Bundled version (matches package.json)
-  const bundledVersion = '0.1.0';
+  const bundledVersion = '0.2.0';
 
   console.log('Available Templates:\n');
   console.log(`Installed Version: ${installedVersion}`);
