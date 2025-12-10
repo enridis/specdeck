@@ -298,6 +298,8 @@ specdeck/
 ├── .specdeck-cache/              # Coordinator mode: aggregated story cache
 │   └── stories.json              # Cached stories from all submodules
 ├── .specdeck.config.json         # Coordinator configuration (submodules, cache settings)
+```
+
 **Key Architecture Patterns:**
 - **Two-Tier Planning:** `project-plan.md` (roadmap) + `releases/R*.md` (detailed stories)
 - **Feature-Based Files:** Stories grouped by feature in `releases/R*/FEATURE.md`
