@@ -3,3 +3,4 @@ export * from './story.schema';
 export * from './release.schema';
 export * from './feature.schema';
 export * from './config.schema';
+export * from './cache.schema';

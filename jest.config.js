@@ -4,6 +4,7 @@ module.exports = {
   roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -19,7 +20,18 @@ module.exports = {
   },
   coverageDirectory: 'coverage',
   verbose: true,
-  transformIgnorePatterns: [
-    'node_modules/(?!(unified|remark-parse|remark-gfm|remark-frontmatter|mdast-util-.*|micromark.*|decode-named-character-reference|character-entities|unist-.*|vfile|bail|is-plain-obj|trough)/)',
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
+    }],
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  testPathIgnorePatterns: [
+    '/node_modules/',
   ],
 };

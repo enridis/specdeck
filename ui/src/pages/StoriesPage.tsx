@@ -5,6 +5,7 @@ import { StoryForm } from '../components/stories/StoryForm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { api } from '../services/api.service';
 import { useAutocomplete } from '../contexts/AutocompleteContext';
+import { useAppContext } from '../contexts/AppContext';
 import type { StoryStatus, StoryComplexity } from '../types';
 
 export function StoriesPage() {
@@ -13,13 +14,15 @@ export function StoriesPage() {
   const [featureFilter, setFeatureFilter] = useState<string>('');
   const [releaseFilter, setReleaseFilter] = useState<string>('');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('');
+  const [milestoneFilter, setMilestoneFilter] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
   const [editingStory, setEditingStory] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  const { isCoordinatorMode, jiraBaseUrl } = useAppContext();
   const { data: features } = useFeatures();
   const { data: releases } = useReleases();
-  const { assignees } = useAutocomplete();
+  const { assignees, milestones } = useAutocomplete();
 
   const { data: allStories, loading, error, refetch } = useStories({
     status: statusFilter || undefined,
@@ -28,10 +31,20 @@ export function StoriesPage() {
     release: releaseFilter || undefined,
   });
 
-  // Client-side filter for assignee since backend might not support it
-  const stories = assigneeFilter
-    ? allStories.filter(story => story.assignee === assigneeFilter)
-    : allStories;
+  // Client-side filter for assignee and milestone since backend might not support them
+  let stories = allStories;
+  
+  if (assigneeFilter) {
+    stories = stories.filter(story => story.assignee === assigneeFilter);
+  }
+  
+  if (milestoneFilter) {
+    if (milestoneFilter === '__not_set__') {
+      stories = stories.filter(story => !story.milestone);
+    } else {
+      stories = stories.filter(story => story.milestone === milestoneFilter);
+    }
+  }
 
   const handleDelete = async (id: string) => {
     await api.stories.delete(id);
@@ -57,17 +70,26 @@ export function StoriesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Stories</h1>
-        <button 
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
-        >
-          New Story
-        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Stories</h1>
+          {isCoordinatorMode && (
+            <p className="text-sm text-gray-500 mt-1">
+              Read-only view. Edit stories in their original repositories, then sync.
+            </p>
+          )}
+        </div>
+        {!isCoordinatorMode && (
+          <button 
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+          >
+            New Story
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
@@ -143,6 +165,22 @@ export function StoriesPage() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Milestone</label>
+            <select
+              value={milestoneFilter}
+              onChange={(e) => setMilestoneFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Milestones</option>
+              <option value="__not_set__">Not Set</option>
+              {milestones.map((milestone) => (
+                <option key={milestone} value={milestone}>
+                  {milestone}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -171,9 +209,19 @@ export function StoriesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Assignee
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Milestone
               </th>
+              {isCoordinatorMode && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Jira Ticket
+                </th>
+              )}
+              {!isCoordinatorMode && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -218,23 +266,43 @@ export function StoriesPage() {
                 <td className="px-6 py-4 text-sm text-gray-500">{story.feature || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{story.release || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{story.assignee || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => {
-                      setEditingStory(story);
-                      setShowForm(true);
-                    }}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(story.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
-                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">{story.milestone || '-'}</td>
+                {isCoordinatorMode && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {story.jira ? (
+                      <a
+                        href={`${jiraBaseUrl}/browse/${story.jira}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        title={`View in Jira: ${story.jira}`}
+                      >
+                        {story.jira}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </td>
+                )}
+                {!isCoordinatorMode && (
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => {
+                        setEditingStory(story);
+                        setShowForm(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(story.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -247,24 +315,28 @@ export function StoriesPage() {
         </div>
       )}
 
-      <StoryForm
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditingStory(null);
-        }}
-        onSuccess={refetch}
-        story={editingStory}
-      />
+      {!isCoordinatorMode && (
+        <>
+          <StoryForm
+            isOpen={showForm}
+            onClose={() => {
+              setShowForm(false);
+              setEditingStory(null);
+            }}
+            onSuccess={refetch}
+            story={editingStory}
+          />
 
-      <ConfirmDialog
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
-        title="Delete Story"
-        message="Are you sure you want to delete this story? This action cannot be undone."
-        confirmLabel="Delete"
-      />
+          <ConfirmDialog
+            isOpen={!!deleteConfirm}
+            onClose={() => setDeleteConfirm(null)}
+            onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+            title="Delete Story"
+            message="Are you sure you want to delete this story? This action cannot be undone."
+            confirmLabel="Delete"
+          />
+        </>
+      )}
     </div>
   );
 }

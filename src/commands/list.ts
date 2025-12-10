@@ -2,7 +2,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { ConfigRepository } from '../repositories';
 import { StoryService, ReleaseService, FeatureService, FeatureWithStories } from '../services';
-import { Feature } from '../schemas';
+import { Feature, Story } from '../schemas';
+import { CacheStory } from '../schemas/cache.schema';
 
 interface ListReleasesOptions {
   withFeatures?: boolean;
@@ -21,6 +22,10 @@ interface ListStoriesOptions {
   release?: string;
   milestone?: string;
   stats?: boolean;
+  withJira?: boolean;
+  global?: boolean;
+  repo?: string;
+  noCache?: boolean;
 }
 
 interface GlobalOptions {
@@ -90,9 +95,10 @@ export function createListCommand(): Command {
     .option('--with-stories', 'Include story details')
     .action(async (options: ListFeaturesOptions, cmd: Command) => {
       try {
-        const config = await new ConfigRepository(process.cwd()).read();
+        const rootPath = process.cwd();
+        const config = await new ConfigRepository(rootPath).read();
         const specdeckDir = config.specdeckDir || './specdeck';
-        const featureService = new FeatureService(specdeckDir);
+        const featureService = new FeatureService(specdeckDir, rootPath);
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         let features: Feature[] | FeatureWithStories[];
@@ -149,11 +155,16 @@ export function createListCommand(): Command {
     .option('-m, --milestone <milestone>', 'Filter by milestone')
     .option('-o, --owner <owner>', 'Filter by owner')
     .option('--stats', 'Show statistics')
+    .option('--with-jira', 'Include Jira ticket column (coordinator mode)')
+    .option('--global', 'Show stories from all repos with repo prefix (coordinator mode)')
+    .option('--repo <name>', 'Filter by repository/submodule (coordinator mode)')
+    .option('--no-cache', 'Skip cache and query submodules directly (coordinator mode)')
     .action(async (options: ListStoriesOptions, cmd: Command) => {
       try {
-        const config = await new ConfigRepository(process.cwd()).read();
+        const rootPath = process.cwd();
+        const config = await new ConfigRepository(rootPath).read();
         const specdeckDir = config.specdeckDir || './specdeck';
-        const storyService = new StoryService(specdeckDir);
+        const storyService = new StoryService(specdeckDir, rootPath);
         const globalOpts: GlobalOptions = cmd.optsWithGlobals();
 
         if (options.stats) {
@@ -184,16 +195,38 @@ export function createListCommand(): Command {
             release: options.release,
             milestone: options.milestone,
             owner: options.owner,
+            repo: options.repo,
+            withJira: options.withJira,
           };
 
-          const stories = await storyService.listStories(filter);
+          // Use cache-aware query if not disabled
+          const stories = await storyService.listStoriesWithCache(filter, {
+            useCache: !options.noCache,
+            checkStale: true,
+          });
+
+          // Check cache staleness and show warning if applicable (non-JSON only)
+          if (!options.noCache && !globalOpts.json && options.withJira) {
+            const cacheInfo = await storyService.getCacheInfo();
+            if (cacheInfo.isCached && cacheInfo.isStale) {
+              console.log(
+                chalk.yellow(
+                  `⚠️  Cache is stale (synced at ${cacheInfo.syncedAt}). Run 'specdeck sync' to refresh.`
+                )
+              );
+              console.log('');
+            }
+          }
 
           if (globalOpts.json) {
             console.log(JSON.stringify(stories, null, 2));
           } else {
             console.log(chalk.bold(`\nStories (${stories.length}):`));
             for (const story of stories) {
-              console.log(chalk.cyan(`\n  ${story.id}: ${story.title}`));
+              const cacheStory = story as Story | CacheStory;
+              const repoPrefix =
+                options.global && 'repo' in cacheStory ? `[${cacheStory.repo}] ` : '';
+              console.log(chalk.cyan(`\n  ${repoPrefix}${story.id}: ${story.title}`));
               console.log(
                 chalk.gray(`    Status: ${story.status} | Complexity: ${story.complexity}`)
               );
@@ -205,6 +238,9 @@ export function createListCommand(): Command {
               }
               if (story.milestone) {
                 console.log(chalk.gray(`    Milestone: ${story.milestone}`));
+              }
+              if (options.withJira && 'jiraTicket' in cacheStory && cacheStory.jiraTicket) {
+                console.log(chalk.green(`    Jira: ${cacheStory.jiraTicket}`));
               }
             }
           }

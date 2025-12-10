@@ -1,10 +1,12 @@
 {
-  "version": "0.2.0",
-  "timestamp": "2025-12-07T12:46:24.367Z",
+  "version": "0.3.0",
+  "timestamp": "2025-12-10T21:25:51.641Z",
   "templates": [
-    "decompose-feature.prompt.md",
-    "sync-workflow.prompt.md",
-    "status-reference.prompt.md",
-    "commands-cheatsheet.prompt.md"
+    "specdeck-decompose.prompt.md",
+    "specdeck-status.prompt.md",
+    "specdeck-commands.prompt.md",
+    "specdeck-migrate-feature.prompt.md",
+    "specdeck-coordinator-setup.prompt.md",
+    "specdeck-jira-sync.prompt.md"
   ]
 }

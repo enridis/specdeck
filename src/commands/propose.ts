@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { ConfigRepository } from '../repositories';
-import { FeatureService } from '../services';
+import { FeatureService, ValidationService } from '../services';
 
 interface ProposeOptions {
   output?: string;
@@ -37,6 +37,26 @@ export function createProposeCommand(): Command {
           process.exit(1);
         }
 
+        // Check for story ID conflicts in coordinator mode
+        const isCoordinator = config.coordinator && config.coordinator.enabled;
+        if (isCoordinator && feature.stories.length > 0) {
+          const submodules = config.coordinator?.submodules || [];
+          const validationService = new ValidationService();
+
+          console.log(chalk.gray('\nValidating story IDs for coordinator conflicts...'));
+          for (const story of feature.stories) {
+            const exists = await validationService.idExists(story.id, submodules);
+            if (exists) {
+              console.error(
+                chalk.red(`Error: Story ID '${story.id}' already exists in another submodule`)
+              );
+              const nextId = await validationService.getNextAvailableId(submodules, featureId);
+              console.error(chalk.yellow(`Suggested alternative: ${nextId}`));
+              process.exit(1);
+            }
+          }
+        }
+
         console.log(chalk.bold.cyan(`\nFeature: ${feature.id} - ${feature.title}`));
         console.log(chalk.gray(`Release: ${feature.releaseId}`));
 
@@ -57,6 +77,15 @@ export function createProposeCommand(): Command {
           chalk.gray('4. Assign complexity: XS (1), S (2), M (3), L (5), XL (8) story points')
         );
         console.log(chalk.gray('5. Add stories to project-plan.md table'));
+
+        if (isCoordinator) {
+          console.log(
+            chalk.blue(
+              `\n⚠️  In coordinator mode: Ensure story IDs are globally unique across submodules`
+            )
+          );
+          console.log(chalk.gray('   Run: specdeck validate-story-ids to check for conflicts'));
+        }
 
         console.log(chalk.bold('\n💡 Story Template:'));
         console.log(

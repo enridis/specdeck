@@ -156,4 +156,26 @@ export const api = {
       return response;
     },
   },
+  // Config
+  config: {
+    get: () => fetchApi<any>('/config'),
+    getSubmoduleStatus: () => fetchApi<any>('/config/submodules/status'),
+  },
+  // Sync
+  sync: {
+    trigger: (options?: { dryRun?: boolean }) =>
+      fetchApi<any>('/sync', {
+        method: 'POST',
+        body: JSON.stringify(options || {}),
+      }),
+  },
+  // Overlays
+  overlays: {
+    list: () => fetchApi<any>('/overlays'),
+    addMapping: (featureId: string, storyId: string, jiraTicket: string, repo?: string) =>
+      fetchApi<any>(`/overlays/${featureId}/map`, {
+        method: 'POST',
+        body: JSON.stringify({ storyId, jiraTicket, repo }),
+      }),
+  },
 };

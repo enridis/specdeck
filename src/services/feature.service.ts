@@ -2,8 +2,9 @@ import { join } from 'path';
 import { readFileSync, mkdirSync, existsSync } from 'fs';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { Feature, Story, FeatureSchema } from '../schemas';
-import { FeatureRepository, ReleaseRepository } from '../repositories';
+import { FeatureRepository, ReleaseRepository, ConfigRepository } from '../repositories';
 import { StoryService } from './story.service';
+import { CacheStory } from '../schemas/cache.schema';
 
 export interface FeatureWithStories extends Feature {
   stories: Story[];
@@ -13,12 +14,16 @@ export class FeatureService {
   private featureRepository: FeatureRepository;
   private releaseRepository: ReleaseRepository;
   private storyService: StoryService;
+  private configRepository: ConfigRepository;
+  private rootPath: string;
 
-  constructor(specdeckDir: string) {
+  constructor(specdeckDir: string, rootPath?: string) {
+    this.rootPath = rootPath || process.cwd();
     const releasesDir = join(specdeckDir, 'releases');
     this.featureRepository = new FeatureRepository();
     this.releaseRepository = new ReleaseRepository(releasesDir);
-    this.storyService = new StoryService(specdeckDir);
+    this.storyService = new StoryService(specdeckDir, this.rootPath);
+    this.configRepository = new ConfigRepository(this.rootPath);
   }
 
   /**
@@ -36,6 +41,45 @@ export class FeatureService {
     }
 
     return allFeatures;
+  }
+
+  /**
+   * Get all features with cache awareness for coordinator mode
+   *
+   * In coordinator mode, derives features from cached stories.
+   * In regular mode, falls back to reading from release files.
+   */
+  async listFeaturesWithCache(): Promise<Feature[]> {
+    // Check if coordinator mode
+    const isCoordinator = await this.configRepository.isCoordinatorMode();
+
+    if (!isCoordinator) {
+      // Regular mode: read from files
+      return this.listFeatures();
+    }
+
+    // Coordinator mode: derive features from cached stories
+    const stories = await this.storyService.listStoriesWithCache();
+    const featureMap = new Map<string, Feature>();
+
+    for (const story of stories) {
+      if (!featureMap.has(story.featureId)) {
+        // Create a minimal feature object from story data
+        const feature: Feature = {
+          id: story.featureId,
+          title: story.featureId, // We don't have title in cache, use ID
+          releaseId: story.releaseId,
+          description: '',
+          storyCount: 0,
+          repos: (story as CacheStory).repo ? [(story as CacheStory).repo] : [],
+        };
+        featureMap.set(story.featureId, feature);
+      }
+      // Count stories
+      featureMap.get(story.featureId)!.storyCount++;
+    }
+
+    return Array.from(featureMap.values());
   }
 
   /**
@@ -58,14 +102,14 @@ export class FeatureService {
    * Get a feature with its stories
    */
   async getFeatureWithStories(featureId: string): Promise<FeatureWithStories | null> {
-    const allFeatures = await this.listFeatures();
+    const allFeatures = await this.listFeaturesWithCache();
     const feature = allFeatures.find((f) => f.id === featureId);
 
     if (!feature) {
       return null;
     }
 
-    const stories = await this.storyService.getStoriesByFeature(featureId);
+    const stories = await this.storyService.getStoriesByFeatureWithCache(featureId);
 
     return {
       ...feature,

@@ -11,12 +11,14 @@ SpecDeck enables teams to navigate and maintain the hierarchy of **Vision → Re
 - **Git-based**: All planning data in Markdown files under version control
 - **Flexible integration**: Works standalone or integrates with Jira/OpenSpec
 - **Multi-repository support**: Track related work across multiple repos with universal story IDs
+- **Coordinator mode**: Manage multiple repositories with Git submodules and overlay files
 - **Developer-focused**: CLI commands for daily workflow integration
 
 ## Status
 
 ✅ **Released (v0.1.0)** - Foundation complete, all R1 stories implemented  
-✅ **Released (v0.2.0)** - Web UI Mode with full CRUD operations
+✅ **Released (v0.2.0)** - Web UI Mode with full CRUD operations  
+✅ **Available (v0.3.0)** - Coordinator Mode for multi-repository management
 
 ## Quick Links
 
@@ -72,6 +74,71 @@ specdeck serve --api-only
 - **Changes not saved**: Check file permissions in `specdeck/` directory
 - **UI not loading**: Try `npm run build` to rebuild the UI bundle
 
+### Coordinator Mode (Multi-Repository)
+
+Manage related projects across multiple repositories while keeping proprietary metadata separate from public repos:
+
+```bash
+# Initialize coordinator repository
+specdeck init coordinator
+
+# Sync stories from all submodules and apply overlays
+specdeck sync
+
+# List stories across all repos with Jira links
+specdeck list stories --with-jira --global
+
+# Filter by specific repository
+specdeck list stories --repo backend
+
+# Manage overlay files for proprietary metadata
+specdeck overlay create AUTH-01 --repo backend    # Create overlay file
+specdeck overlay map BE-AUTH-01-01 PROJ-1234      # Add Jira mapping
+specdeck overlay validate                         # Validate overlay references
+specdeck overlay list                             # List all Jira mappings
+```
+
+**Setup Process:**
+1. Create a new repository to serve as coordinator
+2. Run `specdeck init coordinator` to configure submodules
+3. Add Git submodules for each managed repository
+4. Create overlay files for proprietary metadata (Jira links, internal notes)
+5. Run `specdeck sync` to aggregate stories and apply overlays
+
+**Overlay File Format:**
+Overlay files store proprietary metadata separate from public repositories:
+
+```markdown
+---
+feature: AUTH-01
+---
+
+## Jira Mappings
+
+- **BE-AUTH-01-01**: PROJ-1234
+- **BE-AUTH-01-02**: PROJ-1235
+- **BE-AUTH-01-03**: PROJ-1236
+```
+
+**Features:**
+- 🔗 **Jira Integration**: Link stories to Jira tickets without exposing in public repos
+- 📊 **Unified Views**: Aggregate stories from multiple repos with consistent IDs
+- 🔒 **Privacy Boundaries**: Keep proprietary data in coordinator repo only
+- ⚡ **Fast Queries**: Cache-based operations for quick cross-repo searches
+- ✅ **ID Validation**: Prevent duplicate story IDs across all repositories
+
+**Use Cases:**
+- Organizations with public/private/on-premises repo mix
+- Teams needing unified planning across multiple codebases
+- Projects requiring Jira integration without public exposure
+- Multi-repo architectures with shared planning processes
+
+**Troubleshooting:**
+- **Submodule not found**: Run `git submodule update --init --recursive`
+- **Sync fails**: Check submodule paths in `.specdeck.config.json`
+- **Jira links not showing**: Run `specdeck sync` to refresh cache
+- **Duplicate story IDs**: Use repo prefixes (e.g., `BE-AUTH-01`, `FE-AUTH-01`)
+
 ### Story Management
 ```bash
 # List releases, features, and stories
@@ -84,6 +151,36 @@ specdeck list features --with-stories     # Include story details
 
 specdeck list stories                     # List all stories
 specdeck list stories --feature <id>      # Filter by feature
+specdeck list stories --status in_progress  # Filter by status
+specdeck list stories --owner "john.doe"    # Filter by owner
+```
+
+### Coordinator Commands (Multi-Repository Mode)
+
+```bash
+# Initialize coordinator repository
+specdeck init coordinator                 # Setup coordinator config and directories
+
+# Synchronization and caching
+specdeck sync                             # Aggregate stories from submodules + apply overlays
+specdeck sync --dry-run                   # Preview sync without writing cache
+
+# Overlay management (proprietary metadata)
+specdeck overlay create <feature> --repo <name>  # Create overlay file for feature
+specdeck overlay map <story> <jira> --repo <name> --feature <id>  # Add Jira mapping
+specdeck overlay validate                 # Validate overlay references exist
+specdeck overlay list                     # List all Jira mappings
+
+# Coordinator-aware queries
+specdeck list stories --with-jira         # Include Jira links from overlays
+specdeck list stories --global            # Show repo prefixes for all stories
+specdeck list stories --repo <name>       # Filter to specific submodule
+specdeck list stories --no-cache          # Query submodules directly (slower)
+
+# Validation
+specdeck validate story-ids               # Check for duplicate IDs across repos
+```
+
 ### Project Initialization & Creation
 ```bash
 # Initialize SpecDeck project structure
@@ -117,6 +214,9 @@ The `init copilot` command scaffolds:
 # Validate project structure
 specdeck validate                         # Validate all SpecDeck files
 specdeck validate --fix                   # Auto-fix common issues
+
+# Coordinator-specific validation
+specdeck validate story-ids               # Check for duplicate story IDs across repos
 
 # Upgrade templates to latest version
 specdeck upgrade copilot                  # Upgrade all templates (with backup)
@@ -190,6 +290,14 @@ specdeck/
 │       └── ...
 ├── .github/
 │   └── prompts/                  # GitHub Copilot prompt templates
+├── overlays/                     # Coordinator mode: proprietary metadata (Jira links)
+│   ├── backend/
+│   │   └── API-AUTH.overlay.md   # Jira mappings for backend features
+│   └── frontend/
+│       └── UI-DASH.overlay.md    # Jira mappings for frontend features
+├── .specdeck-cache/              # Coordinator mode: aggregated story cache
+│   └── stories.json              # Cached stories from all submodules
+├── .specdeck.config.json         # Coordinator configuration (submodules, cache settings)
 **Key Architecture Patterns:**
 - **Two-Tier Planning:** `project-plan.md` (roadmap) + `releases/R*.md` (detailed stories)
 - **Feature-Based Files:** Stories grouped by feature in `releases/R*/FEATURE.md`
@@ -197,6 +305,7 @@ specdeck/
 - **Schema Validation:** Zod schemas ensure data consistency
 - **REST API:** Express.js backend with JSON responses
 - **File-Based Storage:** All data persists in Git-tracked Markdown files
+- **Coordinator Mode:** Git submodules + overlay files for multi-repo management
 
 **Story Table Structure:**
 - Core columns: ID, Title, Status, Complexity, Owner, Description
@@ -211,6 +320,7 @@ specdeck/
 **Optional Integrations:**
 - **OpenSpec Framework:** Link stories to change proposals via `openspec` column
 - **Jira:** Track external ticket IDs in `jira` column
+- **Coordinator Mode:** Manage multiple repositories with Git submodules and overlay files
 - **Multi-repo:** Use universal story IDs across repositories
 
 **This Project's Workflow:**

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFeature, useStories, useStats } from '../hooks/useData';
+import { useAppContext } from '../contexts/AppContext';
 import { api } from '../services/api.service';
 import { StoryForm } from '../components/stories/StoryForm';
 import { InlineEditableCell } from '../components/common/InlineEditableCell';
@@ -10,6 +11,7 @@ import type { Story } from '../types';
 
 export function FeatureDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { isCoordinatorMode } = useAppContext();
   const { data: feature, loading, error } = useFeature(id);
   const { data: stories, refetch: refetchStories } = useStories({ feature: id });
   const { data: stats } = useStats('feature', id);
@@ -171,14 +173,33 @@ export function FeatureDetailPage() {
       )}
 
       <div>
+        {isCoordinatorMode && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Coordinator Mode:</strong> These stories are read-only. They come from submodule repositories.
+                  To edit them, navigate to the source repository.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold text-gray-900">Stories</h2>
-          <button
-            onClick={handleCreateStory}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            New Story
-          </button>
+          {!isCoordinatorMode && (
+            <button
+              onClick={handleCreateStory}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              New Story
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -188,6 +209,11 @@ export function FeatureDetailPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Story
                 </th>
+                {isCoordinatorMode && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Repo
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
@@ -203,9 +229,11 @@ export function FeatureDetailPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Milestone
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                {!isCoordinatorMode && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -223,72 +251,110 @@ export function FeatureDetailPage() {
                   }}
                 >
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleEditStory(story)}
-                      className="text-left text-blue-600 hover:text-blue-700 hover:underline"
-                    >
-                      <div className="text-sm font-medium">{story.id}</div>
-                      <div className="text-sm text-gray-500">{story.title}</div>
-                    </button>
+                    {!isCoordinatorMode ? (
+                      <button
+                        onClick={() => handleEditStory(story)}
+                        className="text-left text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        <div className="text-sm font-medium">{story.id}</div>
+                        <div className="text-sm text-gray-500">{story.title}</div>
+                      </button>
+                    ) : (
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{story.id}</div>
+                        <div className="text-sm text-gray-500">{story.title}</div>
+                      </div>
+                    )}
+                  </td>
+                  {isCoordinatorMode && (
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {story.repo || 'unknown'}
+                      </span>
+                    </td>
+                  )}
+                  <td className="px-6 py-4">
+                    {!isCoordinatorMode ? (
+                      <InlineEditableSelect
+                        value={story.status}
+                        onSave={(value) => handleStatusUpdate(story.id, value)}
+                        options={[
+                          { value: 'planned', label: 'Planned' },
+                          { value: 'in_progress', label: 'In Progress' },
+                          { value: 'in_review', label: 'In Review' },
+                          { value: 'blocked', label: 'Blocked' },
+                          { value: 'done', label: 'Done' },
+                        ]}
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-900">
+                        {story.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <InlineEditableSelect
-                      value={story.status}
-                      onSave={(value) => handleStatusUpdate(story.id, value)}
-                      options={[
-                        { value: 'planned', label: 'Planned' },
-                        { value: 'in_progress', label: 'In Progress' },
-                        { value: 'in_review', label: 'In Review' },
-                        { value: 'blocked', label: 'Blocked' },
-                        { value: 'done', label: 'Done' },
-                      ]}
-                    />
+                    {!isCoordinatorMode ? (
+                      <InlineEditableSelect
+                        value={story.complexity}
+                        onSave={(value) => handleComplexityUpdate(story.id, value)}
+                        options={[
+                          { value: 'XS', label: 'XS - Extra Small' },
+                          { value: 'S', label: 'S - Small' },
+                          { value: 'M', label: 'M - Medium' },
+                          { value: 'L', label: 'L - Large' },
+                          { value: 'XL', label: 'XL - Extra Large' },
+                        ]}
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-900">{story.complexity}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <InlineEditableSelect
-                      value={story.complexity}
-                      onSave={(value) => handleComplexityUpdate(story.id, value)}
-                      options={[
-                        { value: 'XS', label: 'XS - Extra Small' },
-                        { value: 'S', label: 'S - Small' },
-                        { value: 'M', label: 'M - Medium' },
-                        { value: 'L', label: 'L - Large' },
-                        { value: 'XL', label: 'XL - Extra Large' },
-                      ]}
-                    />
+                    {!isCoordinatorMode ? (
+                      <InlineEditableNumber
+                        value={story.points}
+                        onSave={(value) => handlePointsUpdate(story.id, value)}
+                        placeholder="-"
+                        min={0}
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-900">{story.points || '-'}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <InlineEditableNumber
-                      value={story.points}
-                      onSave={(value) => handlePointsUpdate(story.id, value)}
-                      placeholder="-"
-                      min={0}
-                    />
+                    {!isCoordinatorMode ? (
+                      <InlineEditableCell
+                        value={story.assignee || ''}
+                        onSave={(value) => handleFieldUpdate(story.id, 'assignee', value)}
+                        type="assignee"
+                        placeholder="Unassigned"
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-500">{story.assignee || 'Unassigned'}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <InlineEditableCell
-                      value={story.assignee || ''}
-                      onSave={(value) => handleFieldUpdate(story.id, 'assignee', value)}
-                      type="assignee"
-                      placeholder="Unassigned"
-                    />
+                    {!isCoordinatorMode ? (
+                      <InlineEditableCell
+                        value={story.milestone || ''}
+                        onSave={(value) => handleFieldUpdate(story.id, 'milestone', value)}
+                        type="milestone"
+                        placeholder="No milestone"
+                      />
+                    ) : (
+                      <span className="text-sm text-gray-500">{story.milestone || 'No milestone'}</span>
+                    )}
                   </td>
-                  <td className="px-6 py-4">
-                    <InlineEditableCell
-                      value={story.milestone || ''}
-                      onSave={(value) => handleFieldUpdate(story.id, 'milestone', value)}
-                      type="milestone"
-                      placeholder="No milestone"
-                    />
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button
-                      onClick={() => handleEditStory(story)}
-                      className="text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      Edit
-                    </button>
-                  </td>
+                  {!isCoordinatorMode && (
+                    <td className="px-6 py-4 text-sm">
+                      <button
+                        onClick={() => handleEditStory(story)}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

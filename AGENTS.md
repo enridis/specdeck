@@ -17,11 +17,6 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
 
----
-title: SpecDeck Agent Instructions Template
-description: Template for AGENTS.md SpecDeck managed block
-version: 0.2.0
----
 <!-- SPECDECK:START -->
 # SpecDeck Instructions
 
@@ -30,7 +25,37 @@ For SpecDeck workflow guidance, see prompt files in `.github/prompts/`:
 - @.github/prompts/specdeck-status.prompt.md - Story status reference
 - @.github/prompts/specdeck-commands.prompt.md - CLI commands reference
 
-Use `specdeck list`, `specdeck list features --with-stories` for project information.
+**Quick Reference:**
+```bash
+specdeck list stories              # List all stories
+specdeck list features             # List features
+specdeck validate all              # Validate structure
+```
 
-**Feature-Based Planning:** SpecDeck uses `specdeck/releases/R*.md` (release overview) and `specdeck/releases/R*/FEATURE.md` (feature stories). See `@specdeck/AGENTS.md` for full details on the structure.
+**Coordinator Mode (Multi-Repo):**
+If `.specdeck.config.json` has `"coordinator": {"enabled": true}`, this is a coordinator project:
+```bash
+specdeck sync                      # Aggregate stories from all submodules
+specdeck list stories              # View aggregated stories from all repos
+```
+
+**Working with Stories:**
+- Stories live in: `specdeck/releases/R*/FEATURE.md`
+- Each feature file contains ONE table with all its stories
+- Required columns: ID, Title, Status, Complexity
+- Edit story status directly in the markdown table, then commit
+
+**File Structure:**
+```
+.specdeck.config.json              # Config (coordinator settings, submodules)
+specdeck/releases/R1-foundation.md # Release overview
+specdeck/releases/R1-foundation/   # Feature story files
+  CLI-CORE.md                      # Stories for CLI-CORE feature
+  FEAT-01.md                       # Stories for FEAT-01 feature
+```
+
+Always read @specdeck/AGENTS.md to get more information about releases, features, stories and how to manage it.
 <!-- SPECDECK:END -->
+
+
+

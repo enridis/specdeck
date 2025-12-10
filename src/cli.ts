@@ -11,6 +11,11 @@ import { createInitCommand } from './commands/init';
 import { createUpgradeCommand } from './commands/upgrade';
 import { createMigrateCommand } from './commands/migrate';
 import { createServeCommand } from './commands/serve';
+import { createOverlayCommand } from './commands/overlay';
+import { createSyncCommand } from './commands/sync';
+import { createValidateStoryIdsCommand } from './commands/validate-story-ids';
+import { createJiraCommand } from './commands/jira';
+import { createStoriesCommand } from './commands/stories';
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
@@ -21,7 +26,10 @@ const program = new Command();
 
 program
   .name('specdeck')
-  .description('CLI tool for managing OpenSpec-Driven Delivery workflows')
+  .description(
+    'CLI tool for managing OpenSpec-Driven Delivery workflows. ' +
+      'Supports single-repo and multi-repo coordinator modes.'
+  )
   .version(packageJson.version, '-v, --version', 'Output the current version');
 
 // Global options
@@ -33,10 +41,15 @@ program.addCommand(createListCommand());
 program.addCommand(createCreateCommand());
 program.addCommand(createProposeCommand());
 program.addCommand(createValidateCommand());
+program.addCommand(createValidateStoryIdsCommand());
 program.addCommand(createInitCommand());
 program.addCommand(createUpgradeCommand());
 program.addCommand(createMigrateCommand());
 program.addCommand(createServeCommand());
+program.addCommand(createOverlayCommand());
+program.addCommand(createSyncCommand());
+program.addCommand(createJiraCommand());
+program.addCommand(createStoriesCommand());
 
 // Parse arguments
 program.parse(process.argv);

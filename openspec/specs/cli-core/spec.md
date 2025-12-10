@@ -28,21 +28,32 @@ The CLI MUST provide a hierarchical command structure using Commander.js with su
 
 ### Requirement: Global Error Handling
 
-**Modification:** The global error handler MUST handle server-specific errors.
+The CLI MUST provide global error handling for all operations including server errors, coordinator-specific errors for submodule operations, cache management issues, overlay parsing failures, and story ID conflicts.
+
+**Modification Note:** Extends existing Global Error Handling requirement to add coordinator-specific error cases.
 
 **New Acceptance Criteria:**
-- Server startup errors are caught and displayed clearly
-- Port binding errors suggest solutions (try different port)
-- Missing directory errors suggest running `specdeck init`
-- Server runtime errors are logged but don't crash the process
+- Missing submodule errors display clear path and suggest checking `.gitmodules`
+- Stale cache errors suggest running `specdeck sync`
+- Overlay parsing errors show file path and line number
+- Story ID conflict errors list all conflicting IDs and their repos
 
-#### Scenario: Handle server error gracefully
+#### Scenario: Handle missing submodule
 
-**Given** the server encounters a runtime error  
-**When** processing a request  
-**Then** the error is logged with stack trace  
-**And** the server continues running  
-**And** the client receives 500 Internal Server Error response
+**Given** config references submodule `./submodules/backend`  
+**And** that directory does not exist  
+**When** any command requires reading from submodules  
+**Then** the CLI displays: "Submodule not found: ./submodules/backend. Run 'git submodule update --init'"  
+**And** exits with code 1
+
+#### Scenario: Handle stale cache
+
+**Given** cache is older than 24 hours  
+**And** user runs `specdeck list stories`  
+**When** the command executes  
+**Then** it displays warning: "Cache is 2 days old. Run 'specdeck sync' to refresh"  
+**And** continues with cached data  
+**And** exits with code 0
 
 ### Requirement: Output Formatting
 The CLI MUST support both human-readable table format and machine-readable JSON format for all data retrieval commands.
@@ -71,27 +82,47 @@ The CLI MUST support both human-readable table format and machine-readable JSON 
 **And** exits with code 0
 
 ### Requirement: Configuration Discovery
-The CLI MUST discover the OpenSpec directory by checking for `.specdeck.config.json` or walking up to find `.git` directory.
 
-#### Scenario: Config file in current directory
-**Given** `.specdeck.config.json` exists in current directory
-**And** it specifies `"openspecDir": "./custom-openspec"`
-**When** any command executes
-**Then** the CLI uses `./custom-openspec` as the base directory
+**Original:** The CLI MUST discover the OpenSpec directory by checking for `.specdeck.config.json` or walking up to find `.git` directory.
 
-#### Scenario: No config file, find git root
-**Given** no `.specdeck.config.json` exists
-**And** current directory is `project/src/subdir`
-**And** `project/.git` exists
-**When** any command executes
-**Then** the CLI uses `project/openspec` as the base directory
+**Modification:** Add support for coordinator-specific configuration fields.
 
-#### Scenario: No config and no git directory
-**Given** no `.specdeck.config.json` exists
-**And** no `.git` directory in parent directories
-**When** any command executes
-**Then** the CLI assumes `./openspec` in current directory
-**And** warns if `openspec/` does not exist
+**New Configuration Schema:**
+```json
+{
+  "specdeckDir": "./specdeck",
+  "coordinator": {
+    "enabled": true,
+    "submodules": [
+      {
+        "name": "backend",
+        "path": "./submodules/backend",
+        "visibility": "public"
+      },
+      {
+        "name": "frontend",
+        "path": "./submodules/frontend",
+        "visibility": "private"
+      }
+    ],
+    "overlaysDir": "./overlays",
+    "cacheDir": "./.specdeck-cache"
+  },
+  "defaults": {
+    "complexity": "M",
+    "status": "planned"
+  }
+}
+```
+
+#### Scenario: Parse coordinator configuration
+
+**Given** `.specdeck.config.json` contains coordinator section with 2 submodules  
+**When** the CLI loads configuration  
+**Then** it validates required fields: `enabled`, `submodules`, `overlaysDir`, `cacheDir`  
+**And** validates each submodule has `name`, `path`  
+**And** `visibility` field is optional (defaults to "private")  
+**And** throws error if validation fails
 
 ### Requirement: Verbose Logging
 The CLI MUST support a `--verbose` flag that enables detailed logging for troubleshooting.
@@ -184,4 +215,77 @@ The serve command MUST respect existing SpecDeck configuration.
 **Then** the server serves the first repo by default  
 **And** the console shows which repo is being served  
 **Note:** Full multi-repo UI is out of scope for v1
+
+### Requirement: Coordinator Repository Mode
+
+The CLI MUST support coordinator repository mode where a parent repository manages multiple project repositories as Git submodules, with aggregated querying and overlay support for proprietary metadata.
+
+#### Scenario: Detect coordinator configuration
+
+**Given** `.specdeck.config.json` contains a `coordinator` section  
+**And** the section has `enabled: true` and `submodules` array  
+**When** any command executes  
+**Then** the CLI operates in coordinator mode  
+**And** scans submodules for SpecDeck data  
+**And** uses cache directory specified in `cacheDir` field
+
+#### Scenario: Initialize coordinator repository
+
+**Given** the user runs `specdeck init coordinator`  
+**When** the command executes  
+**Then** it creates `.specdeck.config.json` with coordinator section  
+**And** creates `overlays/` directory  
+**And** creates `.specdeck-cache/` directory  
+**And** adds `.specdeck-cache/` to `.gitignore`  
+**And** displays instructions for adding Git submodules
+
+#### Scenario: Validate coordinator configuration
+
+**Given** `.specdeck.config.json` has coordinator mode enabled  
+**And** specifies 3 submodules  
+**When** the user runs `specdeck validate config`  
+**Then** it checks each submodule path exists  
+**And** checks each submodule contains `specdeck/` directory  
+**And** reports any invalid submodule paths  
+**And** exits with code 1 if validation fails
+
+### Requirement: Sync Command for Cache Management
+
+The CLI MUST provide a `sync` command that reads stories from all submodules, applies overlay data, and writes merged dataset to cache.
+
+#### Scenario: Sync all submodules to cache
+
+**Given** coordinator has 3 submodules configured  
+**And** each submodule has 5 stories  
+**When** the user runs `specdeck sync`  
+**Then** it reads stories from all submodules  
+**And** applies Jira mappings from overlay files  
+**And** writes merged data to `.specdeck-cache/stories.json`  
+**And** displays summary: "Synced 15 stories from 3 repos, applied 8 overlays"  
+**And** exits with code 0
+
+#### Scenario: Dry-run sync preview
+
+**Given** coordinator has 2 submodules  
+**When** the user runs `specdeck sync --dry-run`  
+**Then** it scans submodules and overlays  
+**And** displays what would be synced (story counts per repo)  
+**And** does NOT write to cache  
+**And** exits with code 0
+
+#### Scenario: Sync with overlay validation errors
+
+**Given** overlay file references story `BE-AUTH-99` that doesn't exist  
+**When** the user runs `specdeck sync`  
+**Then** it reports error: "Overlay references non-existent story: BE-AUTH-99 in overlays/backend/AUTH.overlay.md"  
+**And** does NOT update cache  
+**And** exits with code 1
+
+#### Scenario: Sync performance with large dataset
+
+**Given** coordinator has 5 submodules with 200 stories each  
+**When** the user runs `specdeck sync`  
+**Then** sync completes in <10 seconds  
+**And** writes cache with 1000 stories  
+**And** displays performance stats (duration, stories/sec)
 

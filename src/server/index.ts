@@ -14,8 +14,9 @@ export interface ServerOptions {
 export async function startServer(options: ServerOptions): Promise<void> {
   const { port, host, specdeckDir, apiOnly } = options;
 
-  // Store specdeckDir in process.env for routes to access
+  // Store specdeckDir and root path in process.env for routes to access
   process.env.SPECDECK_DIR = specdeckDir;
+  process.env.SPECDECK_ROOT = process.cwd(); // Store the root path where config is located
   if (options.verbose) {
     process.env.VERBOSE = 'true';
   }

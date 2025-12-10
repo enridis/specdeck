@@ -5,6 +5,9 @@ import { releasesRouter } from './routes/releases';
 import { featuresRouter } from './routes/features';
 import { storiesRouter } from './routes/stories';
 import { statsRouter } from './routes/stats';
+import { configRouter } from './routes/config';
+import { syncRouter } from './routes/sync';
+import { overlaysRouter } from './routes/overlays';
 
 export interface AppOptions {
   apiOnly?: boolean;
@@ -43,6 +46,9 @@ export function createApp(options: AppOptions = {}): Application {
   });
 
   // API routes
+  app.use('/api/config', configRouter);
+  app.use('/api/sync', syncRouter);
+  app.use('/api/overlays', overlaysRouter);
   app.use('/api/releases', releasesRouter);
   app.use('/api/features', featuresRouter);
   app.use('/api/stories', storiesRouter);

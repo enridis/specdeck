@@ -1,7 +1,7 @@
 ---
 title: SpecDeck Commands Cheatsheet
 description: Quick reference for all SpecDeck CLI commands
-version: 0.1.0
+version: 0.2.0
 ---
 
 # SpecDeck Commands Cheatsheet
@@ -29,7 +29,6 @@ specdeck init copilot
   - `AGENTS.md` - OpenSpec workflow instructions
 - `.github/prompts/` - Copilot prompt templates
   - `specdeck-decompose.prompt.md`
-  - `specdeck-sync.prompt.md`
   - `specdeck-status.prompt.md`
   - `specdeck-commands.prompt.md`
 - `.specdeck.config.json` - Configuration file
@@ -114,13 +113,16 @@ specdeck list stories --release R1
 specdeck list stories --all
 ```
 
-**Output**: Story ID, title, status, complexity, owner
+**Output**: Story ID, title, status, complexity, owner (plus Jira/Repo in coordinator mode)
 
 **Common flags**:
 - `--feature, -f <id>` - Filter by feature ID
 - `--release <id>` - Show specific release
-- `--all` - Show all releases including archived
 - `--json` - Output as JSON
+- `--with-jira` - Include Jira from overlays (coordinator mode)
+- `--global` - Show repo prefix (coordinator mode)
+- `--repo <name>` - Filter to submodule (coordinator mode)
+- `--no-cache` - Live-read submodules and overlays (coordinator mode)
 
 **Examples**:
 ```bash
@@ -145,65 +147,6 @@ specdeck list stories -f CLI-CORE --release R1 --json
 - Planning daily work
 - Reviewing backlog
 - Filtering by feature area
-
----
-
-## Sync Commands
-
-### Check Sync Status
-
-Check for stories that may need status updates (useful with OpenSpec integration):
-
-```bash
-specdeck sync status
-```
-
-**Output**: List of stories with suggested status changes
-
-**What it checks**:
-- Stories linked to archived OpenSpec changes (if using OpenSpec integration)
-- Current vs suggested status
-- Reason for suggested update
-
-**Common flags**:
-- `--json` - Output as JSON
-
-**Examples**:
-```bash
-# Check sync status
-specdeck sync status
-
-# JSON output for automation
-specdeck sync status --json
-```
-
-**Use when**:
-- After archiving OpenSpec changes (if using OpenSpec)
-- Before sprint reviews
-- Weekly status checks
-- When statuses feel out of date
-
-**Note:** This command is most useful when using SpecDeck with OpenSpec integration. For standalone usage, manually update story statuses as work progresses.
-
----
-- Updates or creates `AGENTS.md` with SpecDeck section
-- Creates `.specdeck-version` file
-
-**Templates installed**:
-- `decompose-feature.prompt.md`
-- `sync-workflow.prompt.md`
-- `status-reference.prompt.md`
-- `commands-cheatsheet.prompt.md`
-
-**Use when**:
-- Setting up new SpecDeck project
-- Adding Copilot guidance to existing project
-- First time using SpecDeck in a repository
-
-**Notes**:
-- Safe to run multiple times (idempotent)
-- Won't overwrite existing templates
-- Updates AGENTS.md managed block only
 
 ---
 
@@ -238,7 +181,7 @@ specdeck upgrade copilot
 specdeck upgrade copilot --force
 
 # Upgrade specific template
-specdeck upgrade copilot --template sync-workflow
+specdeck upgrade copilot --template decompose
 
 # List available templates
 specdeck upgrade copilot --list
@@ -249,6 +192,38 @@ specdeck upgrade copilot --list
 - When templates have new features
 - Templates feel outdated
 - Periodic maintenance
+
+---
+
+## Jira Sync Helpers (Coordinator Mode)
+
+### Jira Sync Plan
+
+List stories that need Jira reconciliation (missing Jira, conflicts, status mismatches):
+
+```bash
+specdeck jira sync-plan --global --json
+```
+
+**Common flags**:
+- `--feature <id>` - Filter by feature
+- `--repo <name>` - Filter to a submodule
+- `--no-cache` - Live-read submodules and overlays
+- `--json` - Machine output for automation
+
+### Story Details (multi-ID)
+
+Show full details for one or more stories (overlay Jira included):
+
+```bash
+specdeck stories show AUTH-01-01 FE-AUTH-01-02 --with-jira --all-fields --global --json
+```
+
+**Common flags**:
+- `--repo <name>` - Filter to a submodule
+- `--no-cache` - Live-read submodules and overlays
+- `--with-jira` - Include Jira from overlays
+- `--all-fields` - Show all columns (owner, estimate, milestone, tags, notes)
 
 ---
 
@@ -266,7 +241,7 @@ Available on all commands:
 ```bash
 # Get help for any command
 specdeck list features --help
-specdeck sync --help
+specdeck migrate --help
 
 # Check CLI version
 specdeck --version
@@ -284,9 +259,6 @@ specdeck list stories --feature MY-FEATURE
 
 # 2. Update story status in project-plan.md as you work
 # (manual edit)
-
-# 3. Check if anything needs syncing
-specdeck sync status
 ```
 
 ### Sprint Planning
@@ -301,22 +273,6 @@ specdeck list stories --feature FEATURE-02
 
 # 3. Identify work for sprint
 # (use output to plan)
-```
-
-### After Archiving OpenSpec Change
-
-```bash
-# 1. Check which stories need updating
-specdeck sync status
-
-# 2. Review each story mentioned
-
-# 3. Update statuses in project-plan.md
-# (manual edit)
-
-# 4. Verify sync
-specdeck sync status
-# Should show: ✅ All stories are in sync
 ```
 
 ### Setting Up Copilot
@@ -364,12 +320,6 @@ specdeck list features --json | jq -r '.[].id'
 specdeck list stories --json | jq 'group_by(.status) | map({status: .[0].status, count: length})'
 ```
 
-### Check if Sync Needed
-
-```bash
-specdeck sync status --json | jq '.needsUpdate'
-```
-
 ### List Stories for Feature
 
 ```bash
@@ -403,14 +353,12 @@ Add to your `.bashrc` or `.zshrc`:
 alias sd='specdeck'
 alias sdlf='specdeck list features'
 alias sdls='specdeck list stories'
-alias sdsync='specdeck sync status'
 ```
 
 Usage:
 ```bash
 sd list features
 sdls -f CLI-CORE
-sdsync
 ```
 
 ### Checking Installed Version
@@ -427,7 +375,7 @@ specdeck --help
 
 # Command-specific help
 specdeck list --help
-specdeck sync --help
+specdeck migrate --help
 specdeck init --help
 specdeck upgrade --help
 ```
@@ -437,16 +385,14 @@ specdeck upgrade --help
 ## Quick Reference Table
 
 | Command | Purpose | Common Usage |
-|---------|---------|--------------|
+|---------|---------|--------------|  
 | `list releases` | Show releases | Planning |
 | `list features` | Show features | Sprint planning |
 | `list stories` | Show stories | Daily work |
 | `list stories -f ID` | Filter by feature | Focus on area |
-| `sync status` | Check sync | After archiving |
+| `migrate` | Consolidate files | After split structure |
 | `init copilot` | Install templates | Project setup |
-| `upgrade copilot` | Update templates | Maintenance |
-
-## File Locations
+| `upgrade copilot` | Update templates | Maintenance |## File Locations
 
 | File | Purpose |
 |------|---------|

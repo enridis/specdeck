@@ -9,10 +9,11 @@ export const featuresRouter = Router();
 featuresRouter.get('/', async (req: Request, res: Response) => {
   try {
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new FeatureService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new FeatureService(specdeckDir, rootPath);
 
     const releaseFilter = req.query.release as string | undefined;
-    const allFeatures = await service.listFeatures();
+    const allFeatures = await service.listFeaturesWithCache();
     const features = releaseFilter
       ? allFeatures.filter((f) => f.releaseId === releaseFilter)
       : allFeatures;
@@ -40,7 +41,8 @@ featuresRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new FeatureService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new FeatureService(specdeckDir, rootPath);
     const feature = await service.getFeatureWithStories(id);
 
     if (!feature) {
@@ -74,7 +76,23 @@ featuresRouter.get('/:id', async (req: Request, res: Response): Promise<void> =>
 featuresRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new FeatureService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new FeatureService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot create features in coordinator mode. Features must be created in the source repository.',
+        },
+      });
+      return;
+    }
 
     const body = req.body as {
       id?: string;
@@ -139,7 +157,23 @@ featuresRouter.put('/:id', async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new FeatureService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new FeatureService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot update features in coordinator mode. Features must be edited in the source repository.',
+        },
+      });
+      return;
+    }
 
     const updates = req.body as Partial<{
       repos: string[];
@@ -186,7 +220,23 @@ featuresRouter.delete('/:id', async (req: Request, res: Response): Promise<void>
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new FeatureService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new FeatureService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot delete features in coordinator mode. Features must be deleted in the source repository.',
+        },
+      });
+      return;
+    }
 
     await service.deleteFeature(id);
 

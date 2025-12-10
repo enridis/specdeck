@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-10
+
+### Added
+
+- **Multi-Repository Coordinator Mode** - Unified project management across multiple repositories
+  - Git submodule support for mounting public/private/on-premises repos
+  - Overlay files for proprietary metadata (Jira links) separate from public repos
+  - `sync` command to aggregate stories from submodules and apply overlays
+  - Enhanced `list` commands with `--with-jira`, `--global`, `--repo` flags
+  - Global story ID validation to prevent conflicts across repositories
+  - Overlay management commands: `overlay create`, `overlay map`, `overlay validate`
+  - Web UI coordinator support with auto-sync and overlay editing
+- **Jira Sync Copilot Prompt** - AI-assisted Jira synchronization for coordinator mode
+  - Bundled `specdeck-jira-sync.prompt.md` template for LLM-guided sync workflows
+  - `jira sync-plan` command to identify sync candidates with detailed reasoning
+  - Enhanced `stories show` command with multi-ID support and full overlay data
+  - Coordinator-aware cache and overlay integration for sync operations
+
+### Changed
+
+### Fixed
+
 ## [0.2.0] - 2025-12-08
 
 ### Added

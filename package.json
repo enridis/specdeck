@@ -1,6 +1,6 @@
 {
   "name": "specdeck",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Git-based project planning with Markdown files and web UI",
   "main": "dist/index.js",
   "bin": {
@@ -53,6 +53,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/jest": "^29.5.11",
+    "@types/js-yaml": "^4.0.9",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.10.6",
     "@typescript-eslint/eslint-plugin": "^6.17.0",

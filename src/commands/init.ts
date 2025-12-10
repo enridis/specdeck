@@ -1,6 +1,8 @@
 import { Command } from 'commander';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { initCoordinatorMode } from './init-coordinator';
+import { initSubmodule, removeSubmodule } from './init-submodule';
 
 const VERSION_FILE = '.specdeck-version';
 const AGENTS_FILE = 'AGENTS.md';
@@ -23,6 +25,63 @@ export function createInitCommand(): Command {
     .command('copilot')
     .description('Install GitHub Copilot prompt templates')
     .action(initCopilot);
+
+  // Add coordinator subcommand
+  init
+    .command('coordinator')
+    .description('Initialize coordinator mode for multi-repository projects')
+    .action(async () => {
+      try {
+        await initCoordinatorMode();
+      } catch (error) {
+        console.error('✗', error instanceof Error ? error.message : 'Unknown error');
+        process.exit(1);
+      }
+    });
+
+  // Add submodule management subcommands
+  init
+    .command('submodule <repo-url> <path>')
+    .description('Add a git submodule and register it with SpecDeck coordinator')
+    .option('-n, --name <name>', 'Submodule name (defaults to directory name)')
+    .option(
+      '-v, --visibility <type>',
+      'Submodule visibility (public, private, on-premises)',
+      'public'
+    )
+    .option('-b, --branch <branch>', 'Clone a specific branch')
+    .option('--no-update', 'Skip submodule initialization (add only)')
+    .action(
+      async (
+        repoUrl: string,
+        path: string,
+        options: { name?: string; visibility?: string; branch?: string; noUpdate?: boolean }
+      ) => {
+        try {
+          // Type assertion for visibility to match expected type
+          const initOptions = {
+            ...options,
+            visibility: options.visibility as 'public' | 'private' | 'on-premises' | undefined,
+          };
+          await initSubmodule(repoUrl, path, initOptions);
+        } catch (error) {
+          console.error('✗', error instanceof Error ? error.message : 'Unknown error');
+          process.exit(1);
+        }
+      }
+    );
+
+  init
+    .command('remove-submodule <name-or-path>')
+    .description('Remove a git submodule and unregister it from SpecDeck')
+    .action(async (nameOrPath: string) => {
+      try {
+        await removeSubmodule(nameOrPath);
+      } catch (error) {
+        console.error('✗', error instanceof Error ? error.message : 'Unknown error');
+        process.exit(1);
+      }
+    });
 
   return init;
 }
@@ -57,6 +116,9 @@ function initCopilot(): void {
     'specdeck-decompose.prompt.md',
     'specdeck-status.prompt.md',
     'specdeck-commands.prompt.md',
+    'specdeck-migrate-feature.prompt.md',
+    'specdeck-coordinator-setup.prompt.md',
+    'specdeck-jira-sync.prompt.md',
   ];
 
   const templatesSourceDir = join(__dirname, '../templates/copilot/prompts');
@@ -103,12 +165,19 @@ function initCopilot(): void {
   console.log('  - Run "specdeck validate" to check your setup');
 }
 
+function stripYamlFrontMatter(content: string): string {
+  // Remove YAML front matter if present (lines between --- markers)
+  const yamlPattern = /^---\r?\n[\s\S]*?\r?\n---\r?\n/;
+  return content.replace(yamlPattern, '');
+}
+
 function updateAgentsFile(cwd: string): void {
   const agentsPath = join(cwd, AGENTS_FILE);
-  const managedBlock = readFileSync(
+  const templateContent = readFileSync(
     join(__dirname, '../templates/copilot/AGENTS.md.template'),
     'utf-8'
   );
+  const managedBlock = stripYamlFrontMatter(templateContent);
 
   if (!existsSync(agentsPath)) {
     // Create new AGENTS.md

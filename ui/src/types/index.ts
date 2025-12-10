@@ -18,6 +18,8 @@ export interface Story {
   feature?: string;
   release?: string;
   requirementLinks?: string[];
+  jira?: string;
+  repo?: string;
 }
 
 export interface Feature {

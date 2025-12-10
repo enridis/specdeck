@@ -9,8 +9,9 @@ export const statsRouter = Router();
 statsRouter.get('/', async (_req: Request, res: Response) => {
   try {
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
 
-    const storyService = new StoryService(specdeckDir);
+    const storyService = new StoryService(specdeckDir, rootPath);
     const storyStats = await storyService.getStatistics();
 
     res.json({
@@ -35,10 +36,11 @@ statsRouter.get('/releases/:id', async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
 
     const releaseService = new ReleaseService(specdeckDir);
-    const featureService = new FeatureService(specdeckDir);
-    const storyService = new StoryService(specdeckDir);
+    const featureService = new FeatureService(specdeckDir, rootPath);
+    const storyService = new StoryService(specdeckDir, rootPath);
 
     const release = await releaseService.getRelease(id);
     if (!release) {
@@ -112,9 +114,10 @@ statsRouter.get('/features/:id', async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
 
-    const featureService = new FeatureService(specdeckDir);
-    const storyService = new StoryService(specdeckDir);
+    const featureService = new FeatureService(specdeckDir, rootPath);
+    const storyService = new StoryService(specdeckDir, rootPath);
 
     const feature = await featureService.getFeatureWithStories(id);
     if (!feature) {

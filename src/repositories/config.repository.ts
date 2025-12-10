@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { Config, ConfigSchema } from '../schemas';
+import { Config, ConfigSchema, SubmoduleConfig, CoordinatorConfig } from '../schemas';
 
 export class ConfigRepository {
   private static readonly CONFIG_FILE = '.specdeck.config.json';
@@ -55,6 +55,46 @@ export class ConfigRepository {
         `Failed to write config: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  /**
+   * Check if coordinator mode is enabled
+   */
+  async isCoordinatorMode(): Promise<boolean> {
+    const config = await this.read();
+    return config.coordinator?.enabled ?? false;
+  }
+
+  /**
+   * Get coordinator configuration (if enabled)
+   */
+  async getCoordinator(): Promise<CoordinatorConfig | null> {
+    const config = await this.read();
+    return config.coordinator && config.coordinator.enabled ? config.coordinator : null;
+  }
+
+  /**
+   * Get list of submodules
+   */
+  async getSubmodules(): Promise<SubmoduleConfig[]> {
+    const coordinator = await this.getCoordinator();
+    return coordinator?.submodules ?? [];
+  }
+
+  /**
+   * Get overlays directory path
+   */
+  async getOverlaysDir(): Promise<string> {
+    const coordinator = await this.getCoordinator();
+    return coordinator?.overlaysDir ? join(this.rootPath, coordinator.overlaysDir) : '';
+  }
+
+  /**
+   * Get cache directory path
+   */
+  async getCacheDir(): Promise<string> {
+    const coordinator = await this.getCoordinator();
+    return coordinator?.cacheDir ? join(this.rootPath, coordinator.cacheDir) : '';
   }
 
   /**

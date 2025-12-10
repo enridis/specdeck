@@ -1,0 +1,25 @@
+{
+  "specdeckDir": "./specdeck",
+  "coordinator": {
+    "enabled": true,
+    "submodules": [
+      {
+        "name": "backend",
+        "path": "./submodules/backend",
+        "visibility": "public"
+      },
+      {
+        "name": "frontend",
+        "path": "./submodules/frontend",
+        "visibility": "private"
+      },
+      {
+        "name": "models",
+        "path": "./submodules/models",
+        "visibility": "on-premises"
+      }
+    ],
+    "overlaysDir": "./overlays",
+    "cacheDir": "./.specdeck-cache"
+  }
+}

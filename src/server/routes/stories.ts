@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { StoryService } from '../../services';
 import { StorySchema } from '../../schemas';
-import type { Story } from '../../schemas';
+import type { CacheStory, Story } from '../../schemas';
 
 export const storiesRouter = Router();
 
@@ -20,9 +20,12 @@ interface FrontendStory {
   release: string;
   points?: number;
   notes?: string;
+  jira?: string;
+  repo?: string;
 }
 
 function mapStoryToFrontend(story: Story): FrontendStory {
+  const anyStory = story as CacheStory;
   return {
     id: story.id,
     title: story.title,
@@ -35,6 +38,8 @@ function mapStoryToFrontend(story: Story): FrontendStory {
     release: story.releaseId,
     points: story.estimate,
     notes: story.notes,
+    jira: story.jira || anyStory.jiraTicket, // Support both jira (Story) and jiraTicket (CacheStory)
+    repo: anyStory.repo, // Only present in CacheStory
   };
 }
 
@@ -44,7 +49,8 @@ function mapStoryToFrontend(story: Story): FrontendStory {
 storiesRouter.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new StoryService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new StoryService(specdeckDir, rootPath);
 
     // Build filter from query params
     const filter: {
@@ -74,7 +80,7 @@ storiesRouter.get('/', async (req: Request, res: Response): Promise<void> => {
       filter.release = req.query.release as string;
     }
 
-    const stories = await service.listStories(filter);
+    const stories = await service.listStoriesWithCache(filter);
 
     // Map to frontend format
     const mappedStories = stories.map(mapStoryToFrontend);
@@ -105,7 +111,8 @@ storiesRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new StoryService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new StoryService(specdeckDir, rootPath);
     const story = await service.getStory(id);
 
     if (!story) {
@@ -143,7 +150,23 @@ storiesRouter.get('/:id', async (req: Request, res: Response): Promise<void> => 
 storiesRouter.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new StoryService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new StoryService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot create stories in coordinator mode. Stories must be created in the source repository.',
+        },
+      });
+      return;
+    }
 
     // Validate request body
     const storyData = StorySchema.parse(req.body);
@@ -188,7 +211,23 @@ storiesRouter.put('/:id', async (req: Request, res: Response): Promise<void> => 
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new StoryService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new StoryService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot update stories in coordinator mode. Stories must be edited in the source repository.',
+        },
+      });
+      return;
+    }
 
     console.log(`[UPDATE] Story ${id} with data:`, JSON.stringify(req.body, null, 2));
 
@@ -273,7 +312,23 @@ storiesRouter.delete('/:id', async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const specdeckDir = process.env.SPECDECK_DIR || './specdeck';
-    const service = new StoryService(specdeckDir);
+    const rootPath = process.env.SPECDECK_ROOT || process.cwd();
+    const service = new StoryService(specdeckDir, rootPath);
+
+    // Check if coordinator mode
+    const configRepo = service['configRepository'];
+    const isCoordinator = await configRepo.isCoordinatorMode();
+    if (isCoordinator) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'COORDINATOR_READ_ONLY',
+          message:
+            'Cannot delete stories in coordinator mode. Stories must be deleted in the source repository.',
+        },
+      });
+      return;
+    }
 
     // Check if story exists
     const existing = await service.getStory(id);

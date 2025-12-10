@@ -7,10 +7,37 @@ const AGENTS_FILE = 'AGENTS.md';
 const MANAGED_BLOCK_START = '<!-- SPECDECK:START -->';
 const MANAGED_BLOCK_END = '<!-- SPECDECK:END -->';
 
+const TEMPLATE_ALIASES: Record<string, string> = {
+  // Canonical names
+  'specdeck-decompose': 'specdeck-decompose',
+  'specdeck-status': 'specdeck-status',
+  'specdeck-commands': 'specdeck-commands',
+  'specdeck-migrate-feature': 'specdeck-migrate-feature',
+  'specdeck-coordinator-setup': 'specdeck-coordinator-setup',
+  'specdeck-jira-sync': 'specdeck-jira-sync',
+  // Friendly aliases
+  decompose: 'specdeck-decompose',
+  status: 'specdeck-status',
+  commands: 'specdeck-commands',
+  'migrate-feature': 'specdeck-migrate-feature',
+  'coordinator-setup': 'specdeck-coordinator-setup',
+  'jira-sync': 'specdeck-jira-sync',
+};
+
 interface VersionInfo {
   version: string;
   timestamp: string;
   templates: string[];
+}
+
+function normalizeTemplateName(name?: string): string | null {
+  if (!name) return null;
+  const key = name.replace(/\.prompt\.md$/i, '');
+  return TEMPLATE_ALIASES[key] || null;
+}
+
+function displayTemplateName(name: string): string {
+  return name.replace(/^specdeck-/, '');
 }
 
 export function createUpgradeCommand(): Command {
@@ -21,7 +48,7 @@ export function createUpgradeCommand(): Command {
   upgrade
     .command('copilot')
     .description('Upgrade GitHub Copilot prompt templates')
-    .option('--force', 'Skip backup before upgrade')
+    .option('--force', 'Force overwrite templates even if up-to-date (skips backup)')
     .option('--template <name>', 'Upgrade specific template only')
     .option('--list', 'List available templates and versions')
     .action(upgradeCopilot);
@@ -50,17 +77,21 @@ function upgradeCopilot(options: { force?: boolean; template?: string; list?: bo
   const currentVersionInfo = JSON.parse(readFileSync(versionFile, 'utf-8')) as VersionInfo;
 
   // Bundled version (matches package.json)
-  const bundledVersion = '0.2.0';
+  const bundledVersion = '0.3.0';
 
-  // Check if upgrade needed
-  if (currentVersionInfo.version === bundledVersion && !options.template) {
+  // Check if upgrade needed (skip check if --force or --template)
+  if (currentVersionInfo.version === bundledVersion && !options.template && !options.force) {
     console.log(`✓ Templates are already up-to-date (v${bundledVersion})`);
     return;
   }
 
-  console.log(
-    `Upgrading Copilot templates from v${currentVersionInfo.version} to v${bundledVersion}...\n`
-  );
+  if (options.force && currentVersionInfo.version === bundledVersion) {
+    console.log(`⚠️  Forcing overwrite of templates (same version: v${bundledVersion})...\n`);
+  } else {
+    console.log(
+      `Upgrading Copilot templates from v${currentVersionInfo.version} to v${bundledVersion}...\n`
+    );
+  }
 
   const promptsDir = join(cwd, '.github', 'prompts');
 
@@ -72,14 +103,23 @@ function upgradeCopilot(options: { force?: boolean; template?: string; list?: bo
   }
 
   // Copy template files
-  const templateFiles = options.template
-    ? [`${options.template}.prompt.md`]
-    : [
-        'decompose-feature.prompt.md',
-        'sync-workflow.prompt.md',
-        'status-reference.prompt.md',
-        'commands-cheatsheet.prompt.md',
-      ];
+  const templateFiles = (() => {
+    if (options.template) {
+      const normalized = normalizeTemplateName(options.template);
+      if (!normalized) {
+        console.error(
+          `✗ Unknown template "${options.template}". Try one of: ${Object.keys(TEMPLATE_ALIASES)
+            .filter((k) => k !== TEMPLATE_ALIASES[k])
+            .join(', ')}`
+        );
+        process.exit(1);
+      }
+      return [`${normalized}.prompt.md`];
+    }
+
+    const canonicalTemplates = Array.from(new Set(Object.values(TEMPLATE_ALIASES)));
+    return canonicalTemplates.map((template) => `${template}.prompt.md`);
+  })();
 
   const templatesSourceDir = join(__dirname, '../templates/copilot/prompts');
   const upgradedFiles: string[] = [];
@@ -109,7 +149,11 @@ function upgradeCopilot(options: { force?: boolean; template?: string; list?: bo
     timestamp: new Date().toISOString(),
     templates: options.template
       ? [
-          ...currentVersionInfo.templates.filter((t) => !t.startsWith(options.template!)),
+          ...currentVersionInfo.templates.filter((t) => {
+            const normalized = normalizeTemplateName(options.template);
+            if (!normalized) return true;
+            return !t.startsWith(normalized);
+          }),
           ...upgradedFiles,
         ]
       : upgradedFiles,
@@ -139,18 +183,13 @@ function listTemplates(cwd: string): void {
   }
 
   // Bundled version (matches package.json)
-  const bundledVersion = '0.2.0';
+  const bundledVersion = '0.3.0';
 
   console.log('Available Templates:\n');
   console.log(`Installed Version: ${installedVersion}`);
   console.log(`Bundled Version:   ${bundledVersion}\n`);
 
-  const availableTemplates = [
-    'decompose-feature',
-    'sync-workflow',
-    'status-reference',
-    'commands-cheatsheet',
-  ];
+  const availableTemplates = Array.from(new Set(Object.values(TEMPLATE_ALIASES)));
 
   for (const template of availableTemplates) {
     const filename = `${template}.prompt.md`;
@@ -161,7 +200,7 @@ function listTemplates(cwd: string): void {
         : '⚠️  Outdated'
       : '✗ Not installed';
 
-    console.log(`  ${template.padEnd(25)} ${status}`);
+    console.log(`  ${displayTemplateName(template).padEnd(25)} ${status}`);
   }
 
   if (installedVersion !== bundledVersion && installedVersion !== 'Not installed') {
@@ -190,12 +229,19 @@ function createBackup(promptsDir: string): void {
   console.log(`✓ Created backup in .github/prompts/.backup-${timestamp}/\n`);
 }
 
+function stripYamlFrontMatter(content: string): string {
+  // Remove YAML front matter if present (lines between --- markers)
+  const yamlPattern = /^---\r?\n[\s\S]*?\r?\n---\r?\n/;
+  return content.replace(yamlPattern, '');
+}
+
 function updateAgentsFile(cwd: string): void {
   const agentsPath = join(cwd, AGENTS_FILE);
-  const managedBlock = readFileSync(
+  const templateContent = readFileSync(
     join(__dirname, '../templates/copilot/AGENTS.md.template'),
     'utf-8'
   );
+  const managedBlock = stripYamlFrontMatter(templateContent);
 
   if (!existsSync(agentsPath)) {
     // Create new AGENTS.md

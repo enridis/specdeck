@@ -113,13 +113,16 @@ specdeck list stories --release R1
 specdeck list stories --all
 ```
 
-**Output**: Story ID, title, status, complexity, owner
+**Output**: Story ID, title, status, complexity, owner (plus Jira/Repo in coordinator mode)
 
 **Common flags**:
 - `--feature, -f <id>` - Filter by feature ID
 - `--release <id>` - Show specific release
-- `--all` - Show all releases including archived
 - `--json` - Output as JSON
+- `--with-jira` - Include Jira from overlays (coordinator mode)
+- `--global` - Show repo prefix (coordinator mode)
+- `--repo <name>` - Filter to submodule (coordinator mode)
+- `--no-cache` - Live-read submodules and overlays (coordinator mode)
 
 **Examples**:
 ```bash
@@ -189,6 +192,38 @@ specdeck upgrade copilot --list
 - When templates have new features
 - Templates feel outdated
 - Periodic maintenance
+
+---
+
+## Jira Sync Helpers (Coordinator Mode)
+
+### Jira Sync Plan
+
+List stories that need Jira reconciliation (missing Jira, conflicts, status mismatches):
+
+```bash
+specdeck jira sync-plan --global --json
+```
+
+**Common flags**:
+- `--feature <id>` - Filter by feature
+- `--repo <name>` - Filter to a submodule
+- `--no-cache` - Live-read submodules and overlays
+- `--json` - Machine output for automation
+
+### Story Details (multi-ID)
+
+Show full details for one or more stories (overlay Jira included):
+
+```bash
+specdeck stories show AUTH-01-01 FE-AUTH-01-02 --with-jira --all-fields --global --json
+```
+
+**Common flags**:
+- `--repo <name>` - Filter to a submodule
+- `--no-cache` - Live-read submodules and overlays
+- `--with-jira` - Include Jira from overlays
+- `--all-fields` - Show all columns (owner, estimate, milestone, tags, notes)
 
 ---
 
