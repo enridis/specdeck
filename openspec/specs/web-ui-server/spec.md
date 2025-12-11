@@ -277,3 +277,38 @@ The server MUST log all incoming requests and responses.
 **Then** the console shows full error message and stack trace  
 **And** the response still returns sanitized error to client
 
+### Requirement: Coordinator Mode APIs
+
+The server MUST expose coordinator-mode endpoints for config, sync, and overlays, and enforce read-only behavior for cached data.
+
+**Acceptance Criteria:**
+- `GET /api/config` returns coordinator flag, metadata (submoduleCount, cacheDir, overlaysDir), jiraBaseUrl, specdeckDir, and cache `syncedAt` when available; responds 500 on read failure
+- `GET /api/config/submodules/status` returns `statuses` and `anyStale` when coordinator is enabled; responds 400 when coordinator mode is off
+- `POST /api/sync` runs only in coordinator mode with configured submodules; aggregates stories, applies overlays, writes cache (unless `dryRun`), and returns summary stats and `syncedAt`; responds 400 when not coordinator or no submodules
+- `GET /api/overlays` returns aggregated overlay mappings (featureId + Jira ticket pairs) when coordinator mode is enabled; responds 400 otherwise
+- `POST /api/overlays/:featureId/map` validates required `storyId` and `jiraTicket`, checks story existence in submodules, writes mapping to overlays directory, and returns success payload; responds 400 when validation fails or coordinator is off
+- Feature and story mutation endpoints return 403 with `COORDINATOR_READ_ONLY` when coordinator mode is enabled
+
+#### Scenario: Fetch coordinator config with cached sync time
+- **Given** coordinator mode is enabled and cache has `syncedAt`
+- **When** a client calls `GET /api/config`
+- **Then** the response includes `isCoordinatorMode: true`, coordinator metadata, `jiraBaseUrl`, and the cached `syncedAt` timestamp
+
+#### Scenario: Run sync and persist cache
+- **Given** coordinator mode is enabled with submodules configured
+- **When** a client posts to `/api/sync` without `dryRun`
+- **Then** the server aggregates stories, writes cache with `syncedAt`, and returns totalStories and mappedStories statistics
+
+#### Scenario: Add overlay mapping with validation
+- **Given** coordinator mode is enabled
+- **And** story `BE-AUTH-01-01` exists in a configured submodule
+- **When** a client posts `/api/overlays/AUTH-01/map` with `storyId` and `jiraTicket`
+- **Then** the server validates the story, saves the mapping, and returns success
+- **When** the story ID is not found
+- **Then** the server returns 400 with an error message
+
+#### Scenario: Coordinator mode blocks story updates
+- **Given** coordinator mode is enabled
+- **When** a client sends `PUT /api/stories/CLI-01` with updates
+- **Then** the response is 403 with error code `COORDINATOR_READ_ONLY`
+

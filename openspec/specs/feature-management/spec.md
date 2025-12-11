@@ -38,6 +38,16 @@ The CLI MUST provide a command to list all features for a specific release, extr
 **Then** the CLI displays "Error: Release 'R99-unknown' not found"
 **And** exits with code 1
 
+### Requirement: Feature Listing with Story Details
+The CLI SHALL list features with optional nested stories across releases.
+
+#### Scenario: List features with stories and release filter
+**Given** features exist under the configured SpecDeck releases directory  
+**When** the user runs `specdeck list features --with-stories --release R1-foundation`  
+**Then** the command prints release ID, story count, and nested story rows showing ID, title, complexity, status, and optional owner/estimate/milestone for each feature  
+**And** when `--json` is provided, returns an array of feature objects with `stories` arrays containing full story fields  
+**And** exits with code 0
+
 ### Requirement: Show Feature Details
 The CLI MUST provide a command to display detailed information about a specific feature across all releases.
 

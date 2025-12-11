@@ -27,6 +27,16 @@ The CLI MUST provide a command to list all user stories for a specific feature, 
 **And** displays results in <100ms  
 **And** exits with code 0
 
+### Requirement: Story Statistics Reporting
+The CLI MUST provide aggregated story statistics from SpecDeck data.
+
+#### Scenario: Show stats summary
+**Given** stories exist in the configured SpecDeck directory or coordinator cache  
+**When** the user runs `specdeck list stories --stats`  
+**Then** the command calculates totals by status and complexity plus total story points and points-by-status  
+**And** outputs a human-readable summary, or JSON when `--json` is set  
+**And** exits with code 0
+
 ### Requirement: Decompose Feature into Stories
 
 The CLI MUST provide an interactive command to propose decomposition of a feature into user stories, with coordinator mode awareness to prevent story ID conflicts across submodules and prompt for target repository selection.
@@ -109,39 +119,20 @@ The CLI MUST support listing stories across multiple submodules in coordinator m
 **And** does NOT read from cache  
 **And** exits with code 0
 
-### Requirement: Global Story ID Validation
+### Requirement: Story ID Validation Command
+The CLI MUST validate global story ID uniqueness in coordinator mode via a dedicated command.
 
-The CLI MUST validate that all story IDs are globally unique across all submodules in coordinator mode.
+#### Scenario: Detect duplicates with fix suggestions
+**Given** coordinator mode is enabled with configured submodules  
+**When** the user runs `specdeck validate-story-ids --fix`  
+**Then** the command scans all submodules for story IDs, lists any duplicates with the repos where they occur, and suggests repo-prefixed alternatives when `--fix` is provided  
+**And** exits with code 1 when duplicates are found
 
-#### Scenario: Validate story ID uniqueness
-
-**Given** coordinator has 3 submodules  
-**And** backend has story `AUTH-01-01`  
-**And** frontend has story `AUTH-01-02`  
-**When** the user runs `specdeck validate story-ids --global`  
-**Then** it scans all submodules for story IDs  
-**And** reports no conflicts  
-**And** displays "✓ All 25 story IDs are unique across 3 repos"  
+#### Scenario: Confirm uniqueness
+**Given** coordinator mode is enabled and story IDs are unique across submodules  
+**When** the user runs `specdeck validate-story-ids`  
+**Then** the command prints the total IDs scanned and confirms uniqueness  
 **And** exits with code 0
-
-#### Scenario: Detect duplicate story ID
-
-**Given** backend has story `AUTH-01-01`  
-**And** frontend also has story `AUTH-01-01`  
-**When** the user runs `specdeck validate story-ids --global`  
-**Then** it reports error: "Duplicate story ID: AUTH-01-01 found in repos: backend, frontend"  
-**And** suggests using repo prefixes (e.g., `BE-AUTH-01-01`, `FE-AUTH-01-01`)  
-**And** exits with code 1
-
-#### Scenario: Validate before creating story
-
-**Given** coordinator mode enabled  
-**And** user runs `specdeck create story AUTH-01-05`  
-**When** the command checks for ID conflicts  
-**Then** it scans all submodules  
-**And** if `AUTH-01-05` exists anywhere, displays error  
-**And** suggests next available ID  
-**And** exits with code 1 without creating story
 
 ### Requirement: Overlay File Management
 

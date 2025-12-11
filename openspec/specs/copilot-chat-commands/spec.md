@@ -1,7 +1,8 @@
 # copilot-chat-commands Specification
 
 ## Purpose
-TBD - created by archiving change github-copilot-integration. Update Purpose after archive.
+We need deep integration with GitHub Co-Pilot to explain LLM how to properly use SpecDeck funtionality.
+
 ## Requirements
 ### Requirement: Command Registration
 
@@ -63,7 +64,7 @@ The CLI MUST create backups of existing templates before replacing them during u
 The CLI MUST show a changelog of what changed between installed and new template versions.
 
 #### Scenario: Display changes during upgrade
-- **Given** templates are being upgraded from 0.1.0 to 0.2.0
+- **Given** templates are being upgraded from 0.1.0 (lower version) to 0.2.0 (higher version)
 - **When** upgrade process begins
 - **Then** changelog is displayed showing:
 - **And** list of modified template files

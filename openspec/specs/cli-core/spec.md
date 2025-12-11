@@ -81,6 +81,18 @@ The CLI MUST support both human-readable table format and machine-readable JSON 
 **Then** the CLI displays "No features found for release 'R1'"
 **And** exits with code 0
 
+### Requirement: Validate Planning Artifacts
+The CLI MUST provide `specdeck validate all` to check core planning files and summarize results.
+
+#### Scenario: Validate vision, project plan, and releases
+**Given** `.specdeck.config.json` resolves the SpecDeck directory (default `./specdeck`)  
+**And** optional `openspecDir` exists for release files  
+**When** the user runs `specdeck validate all` (with or without `--strict`)  
+**Then** the command validates `vision.md`, `project-plan.md`, and each release markdown it can find  
+**And** missing files are reported as warnings while malformed front matter/sections are reported as errors  
+**And** a summary of error and warning counts is printed  
+**And** the command exits with code 0 when errors are zero, otherwise exits with code 1
+
 ### Requirement: Configuration Discovery
 
 **Original:** The CLI MUST discover the OpenSpec directory by checking for `.specdeck.config.json` or walking up to find `.git` directory.
@@ -248,6 +260,28 @@ The CLI MUST support coordinator repository mode where a parent repository manag
 **And** checks each submodule contains `specdeck/` directory  
 **And** reports any invalid submodule paths  
 **And** exits with code 1 if validation fails
+
+### Requirement: Coordinator Submodule Lifecycle Commands
+The CLI MUST manage coordinator submodules via dedicated commands that update git state and SpecDeck configuration.
+
+#### Scenario: Add submodule with config registration
+
+**Given** coordinator mode is enabled  
+**When** the user runs `specdeck init submodule <repo-url> <path>` with optional `--name`, `--visibility`, `--branch`, or `--no-update`  
+**Then** the command refuses to run if coordinator mode is disabled  
+**And** adds the git submodule (skipping if already present) and initializes it unless `--no-update` is set  
+**And** registers the submodule in `.specdeck.config.json` with resolved name and visibility  
+**And** creates an overlays directory for the repo and scaffolds SpecDeck files inside the submodule when missing  
+**And** prints next steps for committing and syncing
+
+#### Scenario: Remove submodule and unregister
+
+**Given** coordinator mode is enabled  
+**When** the user runs `specdeck init remove-submodule <name-or-path>`  
+**Then** the command exits with code 1 if the submodule is not configured  
+**And** otherwise removes the git submodule (deinit, git rm, and modules cleanup)  
+**And** deletes the matching entry from `.specdeck.config.json`  
+**And** prints a success summary before exiting with code 0
 
 ### Requirement: Sync Command for Cache Management
 

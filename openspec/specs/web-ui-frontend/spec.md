@@ -5,24 +5,21 @@ TBD - created by archiving change add-web-ui-mode. Update Purpose after archive.
 ## Requirements
 ### Requirement: Dashboard View
 
-The UI MUST provide a dashboard that displays project overview and key metrics.
+The UI MUST provide a dashboard that summarizes story statistics from the stats API using cards and text breakdowns.
 
 **Acceptance Criteria:**
-- Dashboard shows total counts for releases, features, stories
-- Dashboard displays story status distribution (pie/bar chart)
-- Dashboard shows stories by complexity breakdown
-- Dashboard displays recent activity (last 10 changes)
-- All data loads from API endpoints
-- Loading states shown during data fetch
+- Fetches overall stats from `/api/stats` when the dashboard loads
+- Renders summary cards for total stories, total points, done count, and in-progress count
+- Shows textual lists for stories by status and by complexity; lists show "No stories yet" when empty
+- Displays a centered loading state while fetching and an inline error block on failure
+- Handles missing fields by displaying zero/default values instead of crashing
 
-#### Scenario: View dashboard
-
-**Given** the user navigates to `/`  
-**When** the page loads  
-**Then** the user sees summary cards showing counts  
-**And** a chart showing story status distribution  
-**And** a chart showing complexity breakdown  
-**And** a list of recent changes (if available in future)
+#### Scenario: View dashboard summary
+- **Given** the user opens `/`
+- **And** the stats API returns totals and byStatus/byComplexity maps
+- **When** the response arrives
+- **Then** the cards show the totals
+- **And** the lists show counts for each status and complexity
 
 ### Requirement: Release List View
 
@@ -139,37 +136,27 @@ The UI MUST provide a detailed view of a single feature with its stories.
 
 ### Requirement: Story List View
 
-The UI MUST provide a comprehensive, filterable list of all stories.
+The UI MUST provide a story list with table view and single-select filters for key fields.
 
 **Acceptance Criteria:**
-- Stories displayed in sortable, filterable table
-- Filters: status, complexity, feature, milestone, owner
-- Table columns: ID, Title, Feature, Status, Complexity, Estimate, Owner, Milestone
-- Click on story opens edit modal
-- Multi-select filters (e.g., multiple statuses)
-- Filter state persisted in URL query params
-- Pagination for large lists (>50 stories)
+- Table columns: Story (ID and title), Status badge, Complexity, Points, Feature, Release, Assignee, Milestone
+- In coordinator mode a Jira column is appended; outside coordinator mode the Jira column is hidden
+- Filters: dropdowns for status, complexity, feature, release; client-side dropdowns for assignee and milestone (including a "Not Set" option)
+- Filters apply immediately without URL persistence or pagination
+- Actions (New Story, edit, delete) are shown only when not in coordinator mode; coordinator mode renders rows read-only
+- Loading and error states are shown above the table
 
-#### Scenario: Filter stories by status
+#### Scenario: Filter stories by status and feature
+- **Given** the story list contains multiple features and statuses
+- **When** the user selects status "in_progress" and feature "CLI-CORE"
+- **Then** only matching rows remain in the table
+- **And** non-matching rows are hidden without a page reload
 
-**Given** the story list has stories with various statuses  
-**When** the user selects "in_progress" and "in_review" from status filter  
-**Then** only stories matching those statuses are displayed  
-**And** the URL updates to `/stories?status=in_progress,in_review`
-
-#### Scenario: Filter stories by milestone
-
-**Given** stories are grouped by milestones  
-**When** the user selects "M1" from milestone filter  
-**Then** only stories in M1 are displayed  
-**And** the count shows filtered/total
-
-#### Scenario: Sort stories by column
-
-**Given** the story table is displayed  
-**When** the user clicks on the "Status" column header  
-**Then** stories are sorted by status alphabetically  
-**And** clicking again reverses the sort order
+#### Scenario: Coordinator mode hides story actions
+- **Given** coordinator mode is enabled
+- **When** the stories page renders
+- **Then** no New Story button or row actions are displayed
+- **And** the Jira column is shown next to the milestone column
 
 ### Requirement: Story Edit Modal
 
@@ -206,28 +193,24 @@ The UI MUST provide a modal for editing story details.
 
 ### Requirement: Navigation and Routing
 
-The UI MUST provide intuitive navigation between all views.
+The UI MUST provide top navigation links for all views with conditional access to overlays.
 
 **Acceptance Criteria:**
-- Sidebar/header with links to: Dashboard, Releases, Features, Stories
-- Breadcrumb navigation shows current location
-- Browser back/forward buttons work correctly
-- All routes are bookmarkable
-- 404 page for invalid routes
+- Header renders brand and links to Dashboard (`/`), Releases, Features, and Stories
+- Overlays link is shown only when coordinator mode is true
+- Navigation uses client-side routing so links do not trigger full page reloads
+- Routes configured: `/`, `/releases`, `/releases/:id`, `/features`, `/features/:id`, `/stories`, `/stories/:id`, `/overlays` (guarded by coordinator mode)
 
-#### Scenario: Navigate via sidebar
+#### Scenario: Navigate via header links
+- **Given** the user is on any view
+- **When** they click "Features" in the header
+- **Then** the features list renders using client-side routing without a page refresh
 
-**Given** the user is on any page  
-**When** the user clicks "Releases" in the sidebar  
-**Then** the releases list view loads  
-**And** the sidebar highlights the active section
-
-#### Scenario: Breadcrumb navigation
-
-**Given** the user is viewing `/releases/R1-foundation/features/CLI-CORE`  
-**Then** the breadcrumb shows: Dashboard > Releases > R1-foundation > CLI-CORE  
-**And** each breadcrumb segment is clickable  
-**And** clicking "R1-foundation" navigates back to release detail
+#### Scenario: Hide overlays link outside coordinator mode
+- **Given** coordinator mode is disabled in config
+- **When** the header renders
+- **Then** no Overlays nav link is shown
+- **And** attempting to visit `/overlays` shows an informational message about coordinator mode
 
 ### Requirement: Loading and Error States
 
@@ -341,168 +324,117 @@ The UI MUST provide immediate feedback for user actions with optimistic updates.
 
 ### Requirement: Web UI MUST support coordinator mode with auto-sync and overlay editing
 
-The Web UI MUST detect coordinator mode, automatically sync on load, display aggregated stories from cache as read-only, and provide editable overlay management with immediate save and validation.
+The Web UI MUST detect coordinator mode, auto-sync on first load when needed, expose manual refresh with stale indicator, and render aggregated data read-only.
+
+**Acceptance Criteria:**
+- Reads `/api/config` on load to determine coordinator mode, cache info, and Jira base URL
+- When coordinator mode is enabled and no last sync time is present, triggers `/api/sync` automatically and shows "Syncing..." in the header
+- Header shows "Synced {ageDescription}" when cache exists, adds a "Stale (>24h)" badge when the sync is older than 24 hours, and offers a Refresh button to rerun sync
+- Sync errors surface inline in the header
+- Overlays navigation is available while in coordinator mode to manage Jira mappings
+- Stories and feature list/detail pages hide create/edit/delete actions when coordinator mode is enabled; server-side read-only enforcement blocks other mutation attempts
 
 #### Scenario: UI detects coordinator mode and auto-syncs on load
-
-**Given** `.specdeck.config.json` has coordinator mode enabled  
-**And** user opens the Web UI  
-**When** the UI loads  
-**Then** it detects coordinator mode from config  
-**And** displays "Syncing..." indicator  
-**And** triggers `specdeck sync` command in background  
-**And** loads cache data after sync completes  
-**And** displays stories from all submodules  
-**And** shows sync timestamp "Synced 30 seconds ago" in header
-
-#### Scenario: Display last sync timestamp with staleness warning
-
-**Given** cache file exists with timestamp  
-**And** cache is 2 hours old  
-**When** UI displays story list  
-**Then** header shows "Synced 2 hours ago"  
-**And** no warning badge (under 24 hours)  
-**When** cache is 2 days old  
-**Then** header shows "Synced 2 days ago"  
-**And** displays warning badge with text "⚠️ Cache is stale"
+- **Given** `/api/config` returns `isCoordinatorMode: true` and no `syncedAt`
+- **When** the app loads
+- **Then** the header shows "Syncing..." and triggers `/api/sync`
+- **And** after completion the header shows "Synced" with a relative timestamp
 
 #### Scenario: Manual refresh triggers sync
-
-**Given** UI is loaded in coordinator mode  
-**And** user clicks "Refresh" button in header  
-**When** refresh is triggered  
-**Then** UI shows "Syncing..." indicator  
-**And** runs `specdeck sync` command  
-**And** reloads cache data after completion  
-**And** updates sync timestamp  
-**And** displays success message "Synced successfully"
+- **Given** coordinator mode is enabled and cache exists
+- **When** the user clicks Refresh in the header
+- **Then** `/api/sync` runs
+- **And** the last sync label updates with the new timestamp
+- **And** any sync error shows inline in the header
 
 #### Scenario: Story data is read-only in coordinator mode
+- **Given** the app is in coordinator mode
+- **When** the user opens the stories page
+- **Then** the New Story button and row action buttons are hidden
+- **And** story rows are not editable inline
 
-**Given** UI displays stories from cache  
-**And** story `BE-AUTH-01-01` is from backend submodule  
-**When** user hovers over story row  
-**Then** no edit button appears  
-**And** tooltip shows "Edit stories in their original repos, then sync"  
-**When** user attempts to click story fields  
-**Then** fields are non-editable  
-**And** cursor shows not-allowed icon
+#### Scenario: Display last sync timestamp with stale badge
+- **Given** the cache timestamp is older than 24 hours
+- **When** the header renders
+- **Then** it shows "Synced {age}" with a "Stale (>24h)" badge next to it
 
 ### Requirement: Web UI MUST provide overlay editor with validation
 
-The Web UI MUST allow users to create, edit, and delete overlay files and Jira mappings with immediate save, inline validation, and error handling.
+The Web UI MUST provide a coordinator-only overlays page that lists Jira mappings and allows adding new mappings with inline validation.
 
-#### Scenario: Create new overlay file for feature
+**Acceptance Criteria:**
+- Accessing `/overlays` when not in coordinator mode shows an informational message instead of the editor
+- In coordinator mode, the page loads overlay data from `/api/overlays` and stories from `/api/stories`
+- Provides a search input with dropdown suggestions (up to 10) matching story ID or title and a Jira ticket input
+- Submitting a mapping posts to `/api/overlays/:featureId/map` using the selected story's feature ID and shows success or inline error messages from the API
+- The mapping table lists each feature with its Jira mappings and links tickets using the configured Jira base URL
+- Loading and error states are shown for fetch and add actions
 
-**Given** coordinator mode enabled  
-**And** feature `AUTH-01` exists in backend submodule  
-**When** user navigates to Overlays section  
-**And** clicks "New Overlay" button  
-**And** selects repository "backend" from dropdown  
-**And** enters feature ID "AUTH-01"  
-**And** clicks "Create"  
-**Then** UI creates file `overlays/backend/AUTH-01.overlay.md`  
-**And** displays success message "Overlay created for AUTH-01"  
-**And** opens overlay editor for the new file
-
-#### Scenario: Add Jira mapping with validation
-
-**Given** overlay file `overlays/backend/AUTH-01.overlay.md` is open  
-**And** story `BE-AUTH-01-01` exists in cache  
-**When** user enters story ID "BE-AUTH-01-01" in input field  
-**And** enters Jira ticket "PROJ-1234"  
-**And** clicks "Add Mapping"  
-**Then** UI validates story ID exists in cache  
-**And** saves mapping immediately to overlay file  
-**And** displays inline success "✓ Mapping added"  
-**And** mapping appears in list below
+#### Scenario: Add Jira mapping from story search
+- **Given** coordinator mode is enabled and the overlays page is open
+- **And** the user selects a story from the search dropdown
+- **When** they submit a Jira ticket ID
+- **Then** the UI calls `/api/overlays/{featureId}/map`
+- **And** on success the mapping appears in the overlay list with a Jira link
 
 #### Scenario: Validation error for non-existent story
-
-**Given** overlay editor is open  
-**When** user enters story ID "BE-AUTH-99-99" (does not exist)  
-**And** enters Jira ticket "PROJ-5555"  
-**And** clicks "Add Mapping"  
-**Then** UI validates story ID against cache  
-**And** displays inline error "❌ Story BE-AUTH-99-99 not found"  
-**And** does NOT save mapping  
-**And** suggests running sync if cache is stale
-
-#### Scenario: Edit existing Jira mapping
-
-**Given** overlay has mapping `BE-AUTH-01-01: PROJ-1234`  
-**When** user clicks edit icon next to mapping  
-**And** changes Jira ticket to "PROJ-5678"  
-**And** clicks "Save"  
-**Then** UI updates overlay file immediately  
-**And** displays success "✓ Mapping updated"  
-**And** new Jira link appears in story list (if loaded with `--with-jira`)
-
-#### Scenario: Delete Jira mapping
-
-**Given** overlay has mapping `BE-AUTH-01-01: PROJ-1234`  
-**When** user clicks delete icon next to mapping  
-**And** confirms deletion in modal  
-**Then** UI removes mapping from overlay file  
-**And** displays success "Mapping removed"  
-**And** mapping disappears from list
+- **Given** coordinator mode is enabled
+- **When** the user submits a mapping for a story ID not in cache
+- **Then** the UI shows the error returned by the API
+- **And** no mapping is added
 
 ### Requirement: Web UI MUST display stories with Jira links from overlays
 
-The Web UI MUST show aggregated stories from all submodules with Jira links applied from overlays, repository labels, and filtering options.
+The Web UI MUST show Jira ticket links for stories when coordinator overlays provide mappings.
 
-#### Scenario: Display stories with Jira column
+**Acceptance Criteria:**
+- When coordinator mode is enabled, the stories table renders a Jira column with links built from `jiraBaseUrl` and the mapped ticket
+- Stories without Jira mappings show a placeholder dash in the Jira column
+- The Jira column is omitted when not in coordinator mode
 
-**Given** cache contains stories from 3 submodules  
-**And** overlays have Jira mappings for some stories  
-**When** user views story list  
-**Then** table includes columns: ID, Title, Status, Complexity, Repo, Jira  
-**And** Repo column shows `[backend]`, `[frontend]`, `[models]`  
-**And** Jira column shows ticket links for stories with mappings  
-**And** Jira column shows "—" for stories without mappings
-
-#### Scenario: Filter stories by repository
-
-**Given** stories from 3 repos displayed  
-**When** user selects "backend" from repository dropdown  
-**Then** table filters to show only `[backend]` stories  
-**And** other repos' stories are hidden  
-**When** user selects "All Repositories"  
-**Then** all stories reappear
-
-#### Scenario: Click Jira link opens ticket
-
-**Given** story `BE-AUTH-01-01` has Jira link `PROJ-1234`  
-**When** user clicks Jira link in table  
-**Then** new browser tab opens to Jira ticket URL  
-**And** URL is `https://jira.company.com/browse/PROJ-1234` (configured base URL)
+#### Scenario: Display Jira link in coordinator mode
+- **Given** coordinator mode is enabled
+- **And** a story has Jira mapping `PROJ-123`
+- **When** the stories list renders
+- **Then** the Jira column shows link `.../browse/PROJ-123` that opens in a new tab
+- **And** a story without mapping shows "-"
 
 ### Requirement: Web UI MUST detect and notify about stale submodules
 
-The Web UI MUST check submodule status and notify users when submodules are behind remote, providing instructions to update manually.
+The Web UI MUST surface a warning when the coordinator reports stale submodules.
 
-#### Scenario: Detect stale submodules
+**Acceptance Criteria:**
+- Calls `/api/config/submodules/status` after loading config when coordinator mode is enabled
+- If `anyStale` is true, shows a header banner advising to run `git submodule update --remote`
+- The warning banner is not shown when `anyStale` is false or when not in coordinator mode
+- Banner content does not list per-repo counts in the current UI
 
-**Given** coordinator has 3 submodules  
-**And** backend submodule is behind remote by 5 commits  
-**When** UI loads  
-**Then** it runs `git submodule status` command  
-**And** detects backend is outdated  
-**And** displays notification banner: "⚠️ Submodules outdated: backend (5 commits behind)"  
-**And** shows instruction: "Run: git submodule update --remote"  
-**And** includes copy-to-clipboard button for command
+#### Scenario: Show stale submodule warning
+- **Given** coordinator mode is enabled and `anyStale` is true
+- **When** the header renders
+- **Then** a warning banner appears with the suggested git command
 
-#### Scenario: Dismiss submodule notification
+### Requirement: Release and Feature Statistics Cards
 
-**Given** stale submodule notification is displayed  
-**When** user clicks "Dismiss" button  
-**Then** notification disappears  
-**And** does not reappear until next UI load
+The UI MUST surface story statistics cards on release and feature detail pages using stats API responses.
 
-#### Scenario: All submodules up to date
+**Acceptance Criteria:**
+- Release detail calls `/api/stats/releases/:id` and renders cards for total stories, done count, in-progress count, total points, and points done.
+- Feature detail calls `/api/stats/features/:id` and renders the same cards.
+- Additional point breakdown cards (in progress, in review, planned) render when provided by the API.
+- Cards fall back to zero/defaults when stats fields are missing to avoid crashes.
+- Stats sections appear above the feature and story listings.
 
-**Given** all submodules are synced with remote  
-**When** UI checks submodule status  
-**Then** no notification appears  
-**And** header shows green checkmark "✓ Submodules up to date"
+#### Scenario: View release stats cards
+- **Given** a release page loads
+- **And** `/api/stats/releases/R1` returns story totals and points by status
+- **When** the page renders
+- **Then** cards show total stories, done, in_progress, total points, and points done values
+- **And** missing fields render as 0 instead of erroring
+
+#### Scenario: View feature stats cards
+- **Given** a feature page loads
+- **And** `/api/stats/features/CLI-CORE` returns stats
+- **When** the page renders
+- **Then** the cards show totals and points using that response
 

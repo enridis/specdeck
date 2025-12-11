@@ -1,7 +1,8 @@
 # agents-md-management Specification
 
 ## Purpose
-TBD - created by archiving change github-copilot-integration. Update Purpose after archive.
+Specification that explains how AGENTS.md files are managed by specdeck utility.
+
 ## Requirements
 ### Requirement: Managed Block Pattern
 
