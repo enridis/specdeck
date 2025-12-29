@@ -1,8 +1,4 @@
-# vscode-extension Specification
-
-## Purpose
-TBD - created by archiving change github-copilot-integration. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
 ### Requirement: Command Registration
 
 The CLI MUST register `specdeck init copilot` and `specdeck init windsurf` commands that install assistant templates and scaffold SpecDeck.
@@ -90,15 +86,3 @@ The CLI MUST create `.specdeck-version` file to track installed template version
 - **And** includes `version`, `timestamp`, `templates`, and `targets` fields
 - **And** `targets` lists all initialized assistants (copilot, windsurf)
 - **And** `templates` lists all installed template files
-
-### Requirement: Command Palette Integration
-
-The extension SHALL register commands in VS Code's Command Palette.
-
-#### Scenario: User accesses SpecDeck commands from Command Palette
-- **Given** the extension is activated
-- **When** user opens Command Palette (Cmd+Shift+P)
-- **Then** SpecDeck commands are visible
-- **And** commands are prefixed with "SpecDeck:"
-- **And** selecting a command executes the corresponding CLI operation
-

@@ -12,10 +12,11 @@ Quick reference for all SpecDeck CLI commands and common usage patterns.
 
 ### Initialize Project
 
-Create SpecDeck project structure with Copilot integration:
+Create SpecDeck project structure with assistant templates:
 
 ```bash
 specdeck init copilot
+specdeck init windsurf
 ```
 
 **What it creates**:
@@ -31,6 +32,10 @@ specdeck init copilot
   - `specdeck-decompose.prompt.md`
   - `specdeck-status.prompt.md`
   - `specdeck-commands.prompt.md`
+- `.windsurf/workflows/` - Windsurf workflow templates
+  - `specdeck-decompose.md`
+  - `specdeck-status.md`
+  - `specdeck-commands.md`
 - `.specdeck.config.json` - Configuration file
 - `.specdeck-version` - Version tracking
 
@@ -152,18 +157,18 @@ specdeck list stories -f CLI-CORE --release R1 --json
 
 ## Upgrade Commands
 
-### Upgrade Copilot Templates
+### Upgrade Templates and Workflows
 
 Update installed prompt templates to latest version:
 
 ```bash
-specdeck upgrade copilot
+specdeck upgrade
 ```
 
 **What it does**:
 - Compares installed vs bundled version
-- Creates backup in `.github/prompts/.backup-{timestamp}/`
-- Replaces templates with new versions
+- Creates backups in target directories (`.github/prompts/`, `.windsurf/workflows/`)
+- Replaces templates and workflows with new versions
 - Updates `.specdeck-version` file
 - Shows changelog of changes
 
@@ -175,16 +180,16 @@ specdeck upgrade copilot
 **Examples**:
 ```bash
 # Upgrade all templates
-specdeck upgrade copilot
+specdeck upgrade
 
 # Skip backup (use with caution)
-specdeck upgrade copilot --force
+specdeck upgrade --force
 
 # Upgrade specific template
-specdeck upgrade copilot --template decompose
+specdeck upgrade --template decompose
 
 # List available templates
-specdeck upgrade copilot --list
+specdeck upgrade --list
 ```
 
 **Use when**:
@@ -295,10 +300,10 @@ cat AGENTS.md
 npm install -g specdeck@latest
 
 # 2. Check template status
-specdeck upgrade copilot --list
+specdeck upgrade --list
 
 # 3. Upgrade templates
-specdeck upgrade copilot
+specdeck upgrade
 
 # 4. Review changes in backup if needed
 ls -la .github/prompts/.backup-*/
@@ -392,7 +397,8 @@ specdeck upgrade --help
 | `list stories -f ID` | Filter by feature | Focus on area |
 | `migrate` | Consolidate files | After split structure |
 | `init copilot` | Install templates | Project setup |
-| `upgrade copilot` | Update templates | Maintenance |## File Locations
+| `init windsurf` | Install templates | Project setup |
+| `upgrade` | Update templates | Maintenance |## File Locations
 
 | File | Purpose |
 |------|---------|

@@ -10,7 +10,8 @@
 ### CLI Commands
 ```bash
 # Project initialization
-specdeck init copilot              # Create specdeck/ and .github/prompts/
+specdeck init copilot              # Install assistant templates + scaffold SpecDeck
+specdeck init windsurf             # Install assistant templates + scaffold SpecDeck
 
 # Story management
 specdeck list stories               # List all stories
@@ -24,12 +25,6 @@ specdeck migrate                   # Migrate old structure to feature-based
 # Validation
 specdeck validate all              # Validate all SpecDeck files
 ```
-
-### Copilot Prompts
-Installed in `.github/prompts/` with `specdeck-` prefix:
-- `specdeck-decompose.prompt.md` - Break features into stories
-- `specdeck-status.prompt.md` - Story status reference
-- `specdeck-commands.prompt.md` - CLI commands reference
 
 ---
 
@@ -437,4 +432,3 @@ File: specdeck/releases/R1-foundation/CLI-CORE.md
 - Ensure YAML front matter has feature and release fields
 
 <!-- SPECDECK:END -->
-

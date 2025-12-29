@@ -8,13 +8,30 @@ const VERSION_FILE = '.specdeck-version';
 const AGENTS_FILE = 'AGENTS.md';
 const MANAGED_BLOCK_START = '<!-- SPECDECK:START -->';
 const MANAGED_BLOCK_END = '<!-- SPECDECK:END -->';
+const BUNDLED_VERSION = '0.3.0';
+const TEMPLATE_NAMES = [
+  'specdeck-decompose',
+  'specdeck-status',
+  'specdeck-commands',
+  'specdeck-migrate-feature',
+  'specdeck-coordinator-setup',
+  'specdeck-jira-sync',
+];
 
 interface VersionInfo {
   version: string;
   timestamp: string;
   templates: string[];
   specdeckFiles?: string[];
+  targets?: string[];
 }
+
+type TemplateTarget = 'copilot' | 'windsurf';
+
+const TARGET_LABELS: Record<TemplateTarget, string> = {
+  copilot: 'Copilot',
+  windsurf: 'Windsurf',
+};
 
 export function createInitCommand(): Command {
   const init = new Command('init');
@@ -25,6 +42,9 @@ export function createInitCommand(): Command {
     .command('copilot')
     .description('Install GitHub Copilot prompt templates')
     .action(initCopilot);
+
+  // Add windsurf subcommand
+  init.command('windsurf').description('Install Windsurf workflow templates').action(initWindsurf);
 
   // Add coordinator subcommand
   init
@@ -87,13 +107,26 @@ export function createInitCommand(): Command {
 }
 
 function initCopilot(): void {
-  const cwd = process.cwd();
+  initTarget('copilot');
+}
 
-  // Check if already initialized
+function initWindsurf(): void {
+  initTarget('windsurf');
+}
+
+function initTarget(target: TemplateTarget): void {
+  const cwd = process.cwd();
   const versionFile = join(cwd, VERSION_FILE);
-  if (existsSync(versionFile)) {
-    console.log('✓ Copilot templates already installed');
-    console.log(`  Run 'specdeck upgrade copilot' to update to latest version`);
+  const existingVersionInfo = readVersionInfo(versionFile);
+  const existingTargets = getExistingTargets(existingVersionInfo);
+
+  if (existingTargets.includes(target)) {
+    const updatedVersionInfo = ensureTargets(existingVersionInfo, existingTargets);
+    if (updatedVersionInfo) {
+      writeVersionInfo(versionFile, updatedVersionInfo);
+    }
+    console.log(`✓ ${TARGET_LABELS[target]} templates already installed`);
+    console.log(`  Run 'specdeck upgrade' to update to latest version`);
     return;
   }
 
@@ -102,31 +135,28 @@ function initCopilot(): void {
   // 0. Scaffold SpecDeck directory
   const specdeckFiles = scaffoldSpecDeck(cwd);
 
-  console.log('\nInstalling Copilot prompt templates...\n');
+  console.log(
+    `\nInstalling ${TARGET_LABELS[target]} ${
+      target === 'copilot' ? 'prompt templates' : 'workflows'
+    }...\n`
+  );
 
-  // 1. Create .github/prompts directory
-  const promptsDir = join(cwd, '.github', 'prompts');
-  if (!existsSync(promptsDir)) {
-    mkdirSync(promptsDir, { recursive: true });
-    console.log('✓ Created .github/prompts/');
+  // 1. Create target directory
+  const targetDir = getTargetDir(cwd, target);
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+    console.log(`✓ Created ${getTargetDirDisplay(target)}`);
   }
 
   // 2. Copy template files
-  const templateFiles = [
-    'specdeck-decompose.prompt.md',
-    'specdeck-status.prompt.md',
-    'specdeck-commands.prompt.md',
-    'specdeck-migrate-feature.prompt.md',
-    'specdeck-coordinator-setup.prompt.md',
-    'specdeck-jira-sync.prompt.md',
-  ];
-
   const templatesSourceDir = join(__dirname, '../templates/copilot/prompts');
   const copiedFiles: string[] = [];
+  const templateFiles = TEMPLATE_NAMES.map((name) => `${name}.prompt.md`);
 
   for (const file of templateFiles) {
     const source = join(templatesSourceDir, file);
-    const dest = join(promptsDir, file);
+    const destName = getTargetFilename(file, target);
+    const dest = join(targetDir, destName);
 
     if (!existsSync(source)) {
       console.error(`✗ Template file not found: ${file}`);
@@ -134,35 +164,112 @@ function initCopilot(): void {
     }
 
     copyFileSync(source, dest);
-    console.log(`✓ Installed ${file}`);
+    console.log(`✓ Installed ${destName}`);
     copiedFiles.push(file);
   }
 
   // 3. Update or create AGENTS.md
   updateAgentsFile(cwd);
 
-  // 4. Create version file
-  // Version is hardcoded to match package.json
-  const versionInfo: VersionInfo = {
-    version: '0.2.0',
+  // 4. Create/update version file
+  const nextTargets = Array.from(new Set([...existingTargets, target]));
+  const nextTemplates = Array.from(
+    new Set([...(existingVersionInfo?.templates ?? []), ...copiedFiles])
+  );
+  const nextSpecdeckFiles =
+    existingVersionInfo?.specdeckFiles ?? (specdeckFiles.length ? specdeckFiles : undefined);
+  const nextVersionInfo: VersionInfo = {
+    version: existingVersionInfo?.version ?? BUNDLED_VERSION,
     timestamp: new Date().toISOString(),
-    specdeckFiles,
-    templates: copiedFiles,
+    templates: nextTemplates,
+    targets: nextTargets,
+    specdeckFiles: nextSpecdeckFiles,
   };
 
-  writeFileSync(versionFile, JSON.stringify(versionInfo, null, 2));
-  console.log(`✓ Created ${VERSION_FILE}`);
+  writeVersionInfo(versionFile, nextVersionInfo);
+  console.log(`✓ Updated ${VERSION_FILE}`);
 
-  console.log('\n✅ SpecDeck project initialized successfully!');
+  console.log('\n✅ SpecDeck resources initialized successfully!');
   console.log('\nCreated files:');
-  console.log('\nSpecDeck (story tracking):');
-  specdeckFiles.forEach((f) => console.log(`  - ${f}`));
-  console.log('\nCopilot templates:');
-  copiedFiles.forEach((f) => console.log(`  - .github/prompts/${f}`));
+  if (specdeckFiles.length) {
+    console.log('\nSpecDeck (story tracking):');
+    specdeckFiles.forEach((f) => console.log(`  - ${f}`));
+  }
+  console.log(`\n${TARGET_LABELS[target]} ${target === 'copilot' ? 'templates' : 'workflows'}:`);
+  copiedFiles.forEach((f) => {
+    console.log(`  - ${getTargetDirDisplay(target)}${getTargetFilename(f, target)}`);
+  });
   console.log('\nNext steps:');
   console.log('  - Edit specdeck/vision.md with your product vision');
   console.log('  - Add stories to specdeck/releases/R1-foundation.md');
   console.log('  - Run "specdeck validate" to check your setup');
+}
+
+function readVersionInfo(versionFile: string): VersionInfo | null {
+  if (!existsSync(versionFile)) {
+    return null;
+  }
+
+  return JSON.parse(readFileSync(versionFile, 'utf-8')) as VersionInfo;
+}
+
+function writeVersionInfo(versionFile: string, info: VersionInfo): void {
+  writeFileSync(versionFile, JSON.stringify(info, null, 2));
+}
+
+function getExistingTargets(versionInfo: VersionInfo | null): TemplateTarget[] {
+  if (!versionInfo) {
+    return [];
+  }
+
+  if (versionInfo.targets?.length) {
+    return versionInfo.targets.filter(isTarget);
+  }
+
+  return ['copilot'];
+}
+
+function ensureTargets(
+  versionInfo: VersionInfo | null,
+  targets: TemplateTarget[]
+): VersionInfo | null {
+  if (!versionInfo) {
+    return null;
+  }
+
+  if (versionInfo.targets?.length) {
+    return null;
+  }
+
+  return {
+    ...versionInfo,
+    targets,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function isTarget(value: string): value is TemplateTarget {
+  return value === 'copilot' || value === 'windsurf';
+}
+
+function getTargetDir(cwd: string, target: TemplateTarget): string {
+  if (target === 'copilot') {
+    return join(cwd, '.github', 'prompts');
+  }
+
+  return join(cwd, '.windsurf', 'workflows');
+}
+
+function getTargetDirDisplay(target: TemplateTarget): string {
+  return target === 'copilot' ? '.github/prompts/' : '.windsurf/workflows/';
+}
+
+function getTargetFilename(sourceFile: string, target: TemplateTarget): string {
+  if (target === 'copilot') {
+    return sourceFile;
+  }
+
+  return sourceFile.replace(/\.prompt\.md$/i, '.md');
 }
 
 function stripYamlFrontMatter(content: string): string {

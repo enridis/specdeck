@@ -1,8 +1,4 @@
-# agents-md-management Specification
-
-## Purpose
-Specification that explains how AGENTS.md files are managed by specdeck utility.
-## Requirements
+## MODIFIED Requirements
 ### Requirement: Managed Block Pattern
 
 The CLI MUST use managed block markers to update AGENTS.md without overwriting user content.
@@ -84,6 +80,7 @@ The CLI SHALL create AGENTS.md if it doesn't exist, following project convention
 - **And** suggests appropriate transitions
 - **And** relates archived changes to "done" status
 
+## ADDED Requirements
 ### Requirement: SpecDeck AGENTS.md Template Content
 
 The CLI MUST provide a SpecDeck AGENTS.md template that documents SpecDeck structure, workflows, and guardrails for AI assistants.
@@ -95,4 +92,3 @@ The CLI MUST provide a SpecDeck AGENTS.md template that documents SpecDeck struc
 - **And** calls out the single-story-table rule
 - **And** includes quick command references for list/validate/sync
 - **And** distinguishes standalone and coordinator workflows
-

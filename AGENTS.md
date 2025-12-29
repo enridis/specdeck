@@ -20,10 +20,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 <!-- SPECDECK:START -->
 # SpecDeck Instructions
 
-For SpecDeck workflow guidance, see prompt files in `.github/prompts/`:
-- @.github/prompts/specdeck-decompose.prompt.md - Feature decomposition guide
-- @.github/prompts/specdeck-status.prompt.md - Story status reference
-- @.github/prompts/specdeck-commands.prompt.md - CLI commands reference
+Use SpecDeck structure and commands to plan releases, features, and stories.
 
 **Quick Reference:**
 ```bash
@@ -56,6 +53,5 @@ specdeck/releases/R1-foundation/   # Feature story files
 
 Always read @specdeck/AGENTS.md to get more information about releases, features, stories and how to manage it.
 <!-- SPECDECK:END -->
-
 
 

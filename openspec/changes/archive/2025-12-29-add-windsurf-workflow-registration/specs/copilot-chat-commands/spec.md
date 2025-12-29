@@ -1,8 +1,4 @@
-# copilot-chat-commands Specification
-
-## Purpose
-We need deep integration with GitHub Co-Pilot to explain LLM how to properly use SpecDeck funtionality.
-## Requirements
+## MODIFIED Requirements
 ### Requirement: Command Registration
 
 The CLI MUST register `specdeck upgrade` command that updates installed prompt templates and Windsurf workflows to the latest version.
@@ -139,4 +135,3 @@ The extension MUST handle errors gracefully and SHALL provide helpful guidance.
 - **Then** extension suggests correct syntax
 - **And** shows available commands
 - **And** provides example usage
-

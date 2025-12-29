@@ -185,6 +185,7 @@ specdeck validate story-ids               # Check for duplicate IDs across repos
 ```bash
 # Initialize SpecDeck project structure
 specdeck init copilot                     # Creates specdeck/ directory and .github/prompts/
+specdeck init windsurf                    # Creates specdeck/ directory and .windsurf/workflows/
 
 # Create new releases and features
 specdeck create release <id> <title>      # Create a new release
@@ -194,7 +195,7 @@ specdeck create feature <id> <title> --release <releaseId>  # Create a new featu
 specdeck propose <changeName>             # Create OpenSpec change proposal
 ```
 
-The `init copilot` command scaffolds:
+The `init copilot` and `init windsurf` commands scaffold:
 - **specdeck/** directory with:
   - `project-plan.md` - High-level roadmap
   - `releases/R1-foundation.md` - Detailed story tracking
@@ -204,6 +205,7 @@ The `init copilot` command scaffolds:
   - specdeck-decompose.prompt.md - Break features into stories
   - specdeck-status.prompt.md - Story status reference
   - specdeck-commands.prompt.md - CLI commands cheatsheet
+- **Windsurf workflows** in `.windsurf/workflows/` (same content, `.md` extension)
 
 **Note:** OpenSpec integration is optional. The tool works standalone for pure story tracking.
   - `AGENTS.md` - SpecDeck CLI instructions for AI assistants
@@ -219,10 +221,10 @@ specdeck validate --fix                   # Auto-fix common issues
 specdeck validate story-ids               # Check for duplicate story IDs across repos
 
 # Upgrade templates to latest version
-specdeck upgrade copilot                  # Upgrade all templates (with backup)
-specdeck upgrade copilot --list           # Show available templates and versions
-specdeck upgrade copilot --template <name>  # Upgrade specific template only
-specdeck upgrade copilot --force          # Skip backup before upgrade
+specdeck upgrade                          # Upgrade all templates (with backup)
+specdeck upgrade --list                   # Show available templates and versions
+specdeck upgrade --template <name>        # Upgrade specific template only
+specdeck upgrade --force                  # Skip backup before upgrade
 
 # Migrate project structure
 specdeck migrate                          # Migrate to latest SpecDeck format

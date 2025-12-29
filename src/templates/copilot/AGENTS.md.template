@@ -6,10 +6,7 @@ version: 0.2.0
 <!-- SPECDECK:START -->
 # SpecDeck Instructions
 
-For SpecDeck workflow guidance, see prompt files in `.github/prompts/`:
-- @.github/prompts/specdeck-decompose.prompt.md - Feature decomposition guide
-- @.github/prompts/specdeck-status.prompt.md - Story status reference
-- @.github/prompts/specdeck-commands.prompt.md - CLI commands reference
+Use SpecDeck structure and commands to plan releases, features, and stories.
 
 **Quick Reference:**
 ```bash
