@@ -1,0 +1,11 @@
+{
+  "source": "jira",
+  "statusMapping": {
+    "To Do": "planned",
+    "In Progress": "in_progress",
+    "In Review": "in_review",
+    "Blocked": "blocked",
+    "Done": "done"
+  },
+  "notes": "Map Jira statuses to SpecDeck statuses (planned, in_progress, in_review, blocked, done)."
+}

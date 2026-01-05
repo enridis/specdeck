@@ -44,7 +44,9 @@ describe('init command', () => {
 
     await program.parseAsync(['init', 'windsurf'], { from: 'user' });
 
-    expect(existsSync(join(tempDir, '.windsurf', 'workflows', 'specdeck-commands.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.windsurf', 'workflows', 'specdeck-release-status.md'))).toBe(
+      true
+    );
 
     const versionInfo = JSON.parse(readFileSync(join(tempDir, '.specdeck-version'), 'utf-8')) as {
       templates: string[];
@@ -53,8 +55,8 @@ describe('init command', () => {
     };
 
     expect(versionInfo.targets).toEqual(expect.arrayContaining(['windsurf']));
-    expect(versionInfo.templates).toContain('specdeck-commands.prompt.md');
-    expect(versionInfo.version).toBe('0.3.0');
+    expect(versionInfo.templates).toContain('specdeck-release-status.prompt.md');
+    expect(versionInfo.version).toBe('0.4.0');
 
     const agents = readFileSync(join(tempDir, 'AGENTS.md'), 'utf-8');
     expect(agents).toContain('<!-- SPECDECK:START -->');
@@ -76,10 +78,12 @@ describe('init command', () => {
     await program.parseAsync(['init', 'copilot'], { from: 'user' });
     await program.parseAsync(['init', 'windsurf'], { from: 'user' });
 
-    expect(existsSync(join(tempDir, '.github', 'prompts', 'specdeck-commands.prompt.md'))).toBe(
+    expect(
+      existsSync(join(tempDir, '.github', 'prompts', 'specdeck-release-status.prompt.md'))
+    ).toBe(true);
+    expect(existsSync(join(tempDir, '.windsurf', 'workflows', 'specdeck-release-status.md'))).toBe(
       true
     );
-    expect(existsSync(join(tempDir, '.windsurf', 'workflows', 'specdeck-commands.md'))).toBe(true);
 
     const versionInfo = JSON.parse(readFileSync(join(tempDir, '.specdeck-version'), 'utf-8')) as {
       targets: string[];

@@ -6,20 +6,24 @@ const VERSION_FILE = '.specdeck-version';
 const AGENTS_FILE = 'AGENTS.md';
 const MANAGED_BLOCK_START = '<!-- SPECDECK:START -->';
 const MANAGED_BLOCK_END = '<!-- SPECDECK:END -->';
-const BUNDLED_VERSION = '0.3.0';
+const BUNDLED_VERSION = '0.4.0';
 
 const TEMPLATE_ALIASES: Record<string, string> = {
   // Canonical names
   'specdeck-decompose': 'specdeck-decompose',
   'specdeck-status': 'specdeck-status',
-  'specdeck-commands': 'specdeck-commands',
+  'specdeck-release-create': 'specdeck-release-create',
+  'specdeck-release-status': 'specdeck-release-status',
+  'specdeck-release-sync': 'specdeck-release-sync',
   'specdeck-migrate-feature': 'specdeck-migrate-feature',
   'specdeck-coordinator-setup': 'specdeck-coordinator-setup',
   'specdeck-jira-sync': 'specdeck-jira-sync',
   // Friendly aliases
   decompose: 'specdeck-decompose',
   status: 'specdeck-status',
-  commands: 'specdeck-commands',
+  'release-create': 'specdeck-release-create',
+  'release-status': 'specdeck-release-status',
+  'release-sync': 'specdeck-release-sync',
   'migrate-feature': 'specdeck-migrate-feature',
   'coordinator-setup': 'specdeck-coordinator-setup',
   'jira-sync': 'specdeck-jira-sync',

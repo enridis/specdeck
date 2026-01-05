@@ -1,0 +1,11 @@
+{
+  "source": "azure",
+  "statusMapping": {
+    "New": "planned",
+    "Active": "in_progress",
+    "Resolved": "in_review",
+    "Blocked": "blocked",
+    "Closed": "done"
+  },
+  "notes": "Map Azure DevOps statuses to SpecDeck statuses (planned, in_progress, in_review, blocked, done)."
+}

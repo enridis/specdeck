@@ -1,13 +1,9 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { ConfigRepository } from '../repositories';
-import { StoryService, ReleaseService, FeatureService, FeatureWithStories } from '../services';
+import { StoryService, FeatureService, FeatureWithStories } from '../services';
 import { Feature, Story } from '../schemas';
 import { CacheStory } from '../schemas/cache.schema';
-
-interface ListReleasesOptions {
-  withFeatures?: boolean;
-}
 
 interface ListFeaturesOptions {
   release?: string;
@@ -33,59 +29,7 @@ interface GlobalOptions {
 }
 
 export function createListCommand(): Command {
-  const list = new Command('list').description('List releases, features, or stories');
-
-  // List releases
-  list
-    .command('releases')
-    .description('List all releases')
-    .option('--with-features', 'Include feature details')
-    .action(async (options: ListReleasesOptions, cmd: Command) => {
-      try {
-        const config = await new ConfigRepository(process.cwd()).read();
-        const specdeckDir = config.specdeckDir || './specdeck';
-        const releaseService = new ReleaseService(specdeckDir);
-        const globalOpts: GlobalOptions = cmd.optsWithGlobals();
-
-        if (options.withFeatures) {
-          const releases = await releaseService.listReleasesWithFeatures();
-
-          if (globalOpts.json) {
-            console.log(JSON.stringify(releases, null, 2));
-          } else {
-            for (const release of releases) {
-              console.log(chalk.bold.cyan(`\n${release.id}: ${release.title}`));
-              if (release.timeframe) {
-                console.log(chalk.gray(`  Timeframe: ${release.timeframe}`));
-              }
-              console.log(chalk.yellow(`  Features (${release.featureList.length}):`));
-              for (const feature of release.featureList) {
-                console.log(`    • ${feature.id}: ${feature.title}`);
-              }
-            }
-          }
-        } else {
-          const releases = await releaseService.listReleases();
-
-          if (globalOpts.json) {
-            console.log(JSON.stringify(releases, null, 2));
-          } else {
-            console.log(chalk.bold('\nReleases:'));
-            for (const release of releases) {
-              console.log(chalk.cyan(`  ${release.id}: ${release.title}`));
-              if (release.timeframe) {
-                console.log(chalk.gray(`    Timeframe: ${release.timeframe}`));
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error(
-          chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        );
-        process.exit(1);
-      }
-    });
+  const list = new Command('list').description('List features or stories');
 
   // List features
   list

@@ -482,4 +482,4 @@ specdeck validate all
 - `@specdeck/AGENTS.md` → "Migrating Features to Submodules" (full guide)
 - `@specdeck/AGENTS.md` → "Overlay Mappings" (overlay format)
 - `@specdeck/AGENTS.md` → "Story Table Columns" (column reference)
-- `@.github/prompts/specdeck-commands.prompt.md` → CLI commands
+- `@specdeck/AGENTS.md` → CLI commands and structure

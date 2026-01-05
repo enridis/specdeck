@@ -142,8 +142,11 @@ feature: AUTH-01
 ### Story Management
 ```bash
 # List releases, features, and stories
-specdeck list releases                    # List all releases
-specdeck list releases --with-features    # Include feature counts
+specdeck releases list                    # List all releases
+specdeck releases list --with-features    # Include feature counts
+specdeck releases status <release-id>     # Release status summary
+specdeck releases status <release-id> --source openspec  # Include OpenSpec hints
+specdeck releases sync-plan <release-id> --source openspec --json  # OpenSpec sync plan
 
 specdeck list features                    # List features in active release
 specdeck list features --release <id>     # List features in specific release
@@ -188,7 +191,7 @@ specdeck init copilot                     # Creates specdeck/ directory and .git
 specdeck init windsurf                    # Creates specdeck/ directory and .windsurf/workflows/
 
 # Create new releases and features
-specdeck create release <id> <title>      # Create a new release
+specdeck releases create <id> <title>      # Create a new release
 specdeck create feature <id> <title> --release <releaseId>  # Create a new feature
 
 # Propose new changes (OpenSpec integration)
@@ -204,7 +207,9 @@ The `init copilot` and `init windsurf` commands scaffold:
 - **Copilot prompt templates** in `.github/prompts/`:
   - specdeck-decompose.prompt.md - Break features into stories
   - specdeck-status.prompt.md - Story status reference
-  - specdeck-commands.prompt.md - CLI commands cheatsheet
+  - specdeck-release-create.prompt.md - Release creation workflow
+  - specdeck-release-status.prompt.md - Release status workflow
+  - specdeck-release-sync.prompt.md - Release sync workflow
 - **Windsurf workflows** in `.windsurf/workflows/` (same content, `.md` extension)
 
 **Note:** OpenSpec integration is optional. The tool works standalone for pure story tracking.
@@ -346,7 +351,7 @@ SpecDeck can work standalone or integrate with the OpenSpec-Driven Delivery fram
 
 **OpenSpec Integration:**
 - Link stories to OpenSpec changes via optional `openspec` column
-- Sync story status with archived changes using `specdeck sync status`
+- Sync story status with archived changes using `specdeck releases sync-plan <release-id> --source openspec`
 - Full spec-driven development workflow with proposals, specs, and changes
 
 This project itself uses OpenSpec integration as a reference implementation:

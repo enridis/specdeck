@@ -57,7 +57,7 @@ if (node.type === 'inlineCode') {
 
 ## Bug #3: Sync Status Not Detecting Archived Changes
 
-**Issue**: The `specdeck sync status` command reported "all stories in sync" even though the OpenSpec change was archived and stories were still marked as "planned".
+**Issue**: The `specdeck releases sync-plan` command reported "all stories in sync" even though the OpenSpec change was archived and stories were still marked as "planned".
 
 **Root Cause**: Two issues:
 1. The code only scanned the direct children of `changes/` directory, treating `archive/` as a single change instead of recursively scanning it
@@ -78,7 +78,7 @@ const linkedStories = stories.filter(s => s.openspec === changeId);
 - **Functional Tests** (`tests/functional/bug-fixes.sh`):
   - Test 6: Verifies sync detects archived changes
   - Test 7: Verifies sync suggests correct status (done for archived)
-- **Manual Verification**: `specdeck sync status` now shows 42 stories needing updates
+- **Manual Verification**: `specdeck releases sync-plan R1-foundation --source openspec` now shows 42 stories needing updates
 
 **Files Changed**:
 - `src/commands/sync.ts` - Fixed change detection and story matching logic

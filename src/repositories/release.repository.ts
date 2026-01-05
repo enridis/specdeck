@@ -2,7 +2,9 @@ import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { existsSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { Release, ReleaseSchema } from '../schemas';
-import { parseMarkdown, extractFrontMatter } from '../parsers';
+import { parseMarkdown, extractFrontMatter, findSection } from '../parsers';
+import { FeatureRepository } from './feature.repository';
+import { Content, ListItem } from 'mdast';
 
 export class ReleaseRepository {
   constructor(private readonly releasesDir: string) {}
@@ -67,13 +69,23 @@ export class ReleaseRepository {
 
     const releaseId = basename(filePath, '.md');
 
+    const objectives = Array.isArray(frontMatter.objectives)
+      ? frontMatter.objectives
+      : extractListSection(ast, 'Objectives');
+    const successMetrics = Array.isArray(frontMatter.successMetrics)
+      ? frontMatter.successMetrics
+      : extractListSection(ast, 'Success Metrics');
+    const features = Array.isArray(frontMatter.features)
+      ? frontMatter.features
+      : await extractFeatureIds(content, releaseId);
+
     const release = ReleaseSchema.parse({
       id: frontMatter.id || releaseId,
       title: frontMatter.title,
       timeframe: frontMatter.timeframe,
-      objectives: Array.isArray(frontMatter.objectives) ? frontMatter.objectives : [],
-      successMetrics: Array.isArray(frontMatter.successMetrics) ? frontMatter.successMetrics : [],
-      features: Array.isArray(frontMatter.features) ? frontMatter.features : [],
+      objectives,
+      successMetrics,
+      features,
     });
 
     return release;
@@ -177,35 +189,121 @@ export class ReleaseRepository {
     lines.push('');
 
     // Objectives
+    lines.push('## Objectives');
+    lines.push('');
     if (release.objectives && release.objectives.length > 0) {
-      lines.push('## Objectives');
-      lines.push('');
       release.objectives.forEach((obj) => {
         lines.push(`- ${obj}`);
       });
-      lines.push('');
+    } else {
+      lines.push('- [Add release objectives here]');
     }
+    lines.push('');
 
     // Success Metrics
+    lines.push('## Success Metrics');
+    lines.push('');
     if (release.successMetrics && release.successMetrics.length > 0) {
-      lines.push('## Success Metrics');
-      lines.push('');
       release.successMetrics.forEach((metric) => {
         lines.push(`- ${metric}`);
       });
-      lines.push('');
+    } else {
+      lines.push('- [Add success metrics here]');
     }
+    lines.push('');
 
     // Features
+    lines.push('## Features');
+    lines.push('');
     if (release.features && release.features.length > 0) {
-      lines.push('## Features');
-      lines.push('');
       release.features.forEach((feature) => {
         lines.push(`- **${feature}**`);
       });
-      lines.push('');
+    } else {
+      lines.push('- **FEATURE-01**: [Feature Title]');
+      lines.push('  - [Feature description]');
+      lines.push('  - [Key capabilities]');
     }
+    lines.push('');
+
+    // Dependencies
+    lines.push('## Dependencies');
+    lines.push('');
+    lines.push('- [List dependencies on other releases, teams, or external factors]');
+    lines.push('');
+
+    // Risks
+    lines.push('## Risks');
+    lines.push('');
+    lines.push('### Risk 1: [Risk Title]');
+    lines.push('');
+    lines.push('**Likelihood**: [Low/Medium/High] | **Impact**: [Low/Medium/High]');
+    lines.push('');
+    lines.push('**Description**: [Describe the risk]');
+    lines.push('');
+    lines.push('**Mitigation**: [How to mitigate this risk]');
+    lines.push('');
+
+    // Timeline
+    lines.push('## Timeline');
+    lines.push('');
+    lines.push('- **Planning**: [Dates]');
+    lines.push('- **Development**: [Dates]');
+    lines.push('- **Testing**: [Dates]');
+    lines.push('- **Release**: [Target date]');
+    lines.push('');
 
     return lines.join('\n');
   }
+}
+
+function extractListSection(ast: ReturnType<typeof parseMarkdown>, heading: string): string[] {
+  const section = findSection(ast, heading);
+  return extractListItems(section);
+}
+
+function extractListItems(nodes: Content[]): string[] {
+  const results: string[] = [];
+  for (const node of nodes) {
+    if (node.type === 'list') {
+      const list = node;
+      for (const item of list.children) {
+        results.push(extractListItemText(item));
+      }
+    }
+  }
+  return results.filter((value) => value.length > 0);
+}
+
+function extractListItemText(item: ListItem): string {
+  if (!item.children || item.children.length === 0) {
+    return '';
+  }
+
+  return item.children
+    .map((child) => extractTextFromNode(child as Content))
+    .join('')
+    .trim();
+}
+
+function extractTextFromNode(node: Content): string {
+  if (node.type === 'text') {
+    return 'value' in node ? String(node.value) : '';
+  }
+
+  if (node.type === 'inlineCode') {
+    return 'value' in node ? String(node.value) : '';
+  }
+
+  if ('children' in node) {
+    return (node.children as Content[]).map(extractTextFromNode).join('');
+  }
+
+  return '';
+}
+
+async function extractFeatureIds(content: string, releaseId: string): Promise<string[]> {
+  const featureRepository = new FeatureRepository();
+  const features = await featureRepository.extractFromRelease(content, releaseId);
+  return features.map((feature) => feature.id);
 }

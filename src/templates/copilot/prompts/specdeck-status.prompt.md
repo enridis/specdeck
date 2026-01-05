@@ -1,7 +1,7 @@
 ---
 title: Story Status Reference
 description: Complete reference for story status values and transitions
-version: 0.2.0
+version: 0.4.0
 ---
 
 # Story Status Reference
@@ -318,6 +318,12 @@ specdeck list stories
 # Filter by status (manually, or use grep)
 specdeck list stories | grep "in_progress"
 
-# Check what needs syncing
-specdeck sync status
+# Release status summary
+specdeck releases status R1-foundation
+
+# OpenSpec status hints (optional)
+specdeck releases status R1-foundation --source openspec
+
+# OpenSpec sync plan
+specdeck releases sync-plan R1-foundation --source openspec
 ```

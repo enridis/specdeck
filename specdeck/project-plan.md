@@ -31,7 +31,8 @@ SpecDeck commands auto-detect the active release (first with `status: in_progres
 **Commands:**
 - `specdeck list stories` - Shows active release stories
 - `specdeck list stories --release R1` - Shows specific release
-- `specdeck sync status` - Updates active release
+- `specdeck releases status R1-foundation` - Release status summary
+- `specdeck releases sync-plan R1-foundation --source openspec` - OpenSpec reconciliation plan
 
 **Archiving:**
 When a release is complete, move its file to `releases/archive/` and update its status to `done`.

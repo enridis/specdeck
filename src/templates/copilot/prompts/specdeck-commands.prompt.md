@@ -1,7 +1,7 @@
 ---
 title: SpecDeck Commands Cheatsheet
 description: Quick reference for all SpecDeck CLI commands
-version: 0.2.0
+version: 0.4.0
 ---
 
 # SpecDeck Commands Cheatsheet
@@ -31,11 +31,15 @@ specdeck init windsurf
 - `.github/prompts/` - Copilot prompt templates
   - `specdeck-decompose.prompt.md`
   - `specdeck-status.prompt.md`
-  - `specdeck-commands.prompt.md`
+  - `specdeck-release-create.prompt.md`
+  - `specdeck-release-status.prompt.md`
+  - `specdeck-release-sync.prompt.md`
 - `.windsurf/workflows/` - Windsurf workflow templates
   - `specdeck-decompose.md`
   - `specdeck-status.md`
-  - `specdeck-commands.md`
+  - `specdeck-release-create.md`
+  - `specdeck-release-status.md`
+  - `specdeck-release-sync.md`
 - `.specdeck.config.json` - Configuration file
 - `.specdeck-version` - Version tracking
 
@@ -53,10 +57,10 @@ specdeck init windsurf
 Show all releases in the roadmap:
 
 ```bash
-specdeck list releases
+specdeck releases list
 ```
 
-**Output**: Release IDs, status, timeline, story counts
+**Output**: Release IDs, titles, timeframe, feature counts
 
 **Use when**:
 - Planning work across releases
@@ -391,7 +395,7 @@ specdeck upgrade --help
 
 | Command | Purpose | Common Usage |
 |---------|---------|--------------|  
-| `list releases` | Show releases | Planning |
+| `releases list` | Show releases | Planning |
 | `list features` | Show features | Sprint planning |
 | `list stories` | Show stories | Daily work |
 | `list stories -f ID` | Filter by feature | Focus on area |

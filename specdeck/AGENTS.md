@@ -17,7 +17,7 @@ specdeck init windsurf             # Install assistant templates + scaffold Spec
 specdeck list stories               # List all stories
 specdeck list stories --feature CLI-CORE # Filter by feature
 specdeck list features --with-stories    # Show features with stories
-specdeck list releases --with-features   # Show release hierarchy
+specdeck releases list --with-features   # Show release hierarchy
 
 # Migration (if needed)
 specdeck migrate                   # Migrate old structure to feature-based
@@ -277,7 +277,7 @@ specdeck list stories
 specdeck list stories --feature CLI-CORE
 
 # View release hierarchy
-specdeck list releases --with-features
+specdeck releases list --with-features
 specdeck list features --with-stories
 
 # Get JSON for scripting

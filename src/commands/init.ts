@@ -8,11 +8,13 @@ const VERSION_FILE = '.specdeck-version';
 const AGENTS_FILE = 'AGENTS.md';
 const MANAGED_BLOCK_START = '<!-- SPECDECK:START -->';
 const MANAGED_BLOCK_END = '<!-- SPECDECK:END -->';
-const BUNDLED_VERSION = '0.3.0';
+const BUNDLED_VERSION = '0.4.0';
 const TEMPLATE_NAMES = [
   'specdeck-decompose',
   'specdeck-status',
-  'specdeck-commands',
+  'specdeck-release-create',
+  'specdeck-release-status',
+  'specdeck-release-sync',
   'specdeck-migrate-feature',
   'specdeck-coordinator-setup',
   'specdeck-jira-sync',
@@ -373,6 +375,20 @@ function scaffoldSpecDeck(cwd: string): string[] {
   copyFileSync(r1Source, r1Dest);
   console.log('✓ Created specdeck/releases/R1-foundation.md');
   createdFiles.push('specdeck/releases/R1-foundation.md');
+
+  // Copy mapping templates
+  const mappingsDir = join(specdeckDir, 'mappings');
+  mkdirSync(mappingsDir, { recursive: true });
+  const mappingTemplates = ['jira.json.template', 'azure.json.template', 'README.md.template'];
+  for (const template of mappingTemplates) {
+    const source = join(templatesSourceDir, 'mappings', template);
+    const dest = join(mappingsDir, template.replace(/\.template$/, ''));
+    if (existsSync(source)) {
+      copyFileSync(source, dest);
+      console.log(`✓ Created specdeck/mappings/${template.replace(/\.template$/, '')}`);
+      createdFiles.push(`specdeck/mappings/${template.replace(/\.template$/, '')}`);
+    }
+  }
 
   return createdFiles;
 }

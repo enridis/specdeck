@@ -68,7 +68,7 @@ export function createMigrateCommand(): Command {
         console.log(chalk.dim('\nNext steps:'));
         console.log(chalk.dim('  1. Review the migrated files in specdeck/releases/'));
         console.log(chalk.dim('  2. Backup of original files saved in openspec/releases.backup/'));
-        console.log(chalk.dim('  3. Run `specdeck list releases --with-features` to verify'));
+        console.log(chalk.dim('  3. Run `specdeck releases list --with-features` to verify'));
       } catch (error) {
         console.error(
           chalk.red('Error during migration:'),

@@ -66,16 +66,21 @@ fi
 
 # Test 6: Multiple command types support JSON
 echo ""
-echo "Test 6: All list commands support --json"
-for cmd in "releases" "features"; do
-  output=$(node dist/cli.js list $cmd --json 2>/dev/null)
-  if echo "$output" | jq . > /dev/null 2>&1; then
-    echo "✅ PASS: list $cmd --json works"
-  else
-    echo "❌ FAIL: list $cmd --json doesn't work"
-    exit 1
-  fi
-done
+echo "Test 6: Release and list commands support --json"
+output=$(node dist/cli.js releases list --json 2>/dev/null)
+if echo "$output" | jq . > /dev/null 2>&1; then
+  echo "✅ PASS: releases list --json works"
+else
+  echo "❌ FAIL: releases list --json doesn't work"
+  exit 1
+fi
+output=$(node dist/cli.js list features --json 2>/dev/null)
+if echo "$output" | jq . > /dev/null 2>&1; then
+  echo "✅ PASS: list features --json works"
+else
+  echo "❌ FAIL: list features --json doesn't work"
+  exit 1
+fi
 
 # Test 7: Features are parsed from bullet list format
 echo ""
@@ -98,6 +103,26 @@ if [ "$has_description" = "true" ]; then
   echo "✅ PASS: Feature descriptions extracted"
 else
   echo "❌ FAIL: Feature descriptions not extracted"
+  exit 1
+fi
+
+echo ""
+echo "Test 9: Release status JSON output includes expected fields"
+output=$(node dist/cli.js releases status R1-foundation --json 2>/dev/null)
+if echo "$output" | jq 'has("release") and has("totals") and has("byStatus") and has("stories")' | grep -q "true"; then
+  echo "✅ PASS: Release status JSON has expected fields"
+else
+  echo "❌ FAIL: Release status JSON missing expected fields"
+  exit 1
+fi
+
+echo ""
+echo "Test 10: Release sync-plan JSON output is an array"
+output=$(node dist/cli.js releases sync-plan R1-foundation --source openspec --json 2>/dev/null)
+if echo "$output" | jq 'type == "array"' | grep -q "true"; then
+  echo "✅ PASS: Sync-plan JSON output is an array"
+else
+  echo "❌ FAIL: Sync-plan JSON output is not an array"
   exit 1
 fi
 

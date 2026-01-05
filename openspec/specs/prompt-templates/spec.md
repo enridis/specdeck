@@ -15,13 +15,12 @@ The CLI MUST bundle prompt template files that provide SpecDeck guidance and ins
 - **And** shows example story breakdown
 - **And** includes checklist for validating stories
 
-#### Scenario: Sync Workflow Template
-- **Given** CLI includes sync-workflow.prompt.md template
-- **When** template is installed in project
-- **Then** file explains when to run sync checks
-- **And** describes manual update process for project-plan.md
-- **And** shows story status transitions
-- **And** includes troubleshooting common sync issues
+#### Scenario: Release workflow templates
+- **Given** CLI includes release workflow templates: specdeck-release-create.prompt.md, specdeck-release-status.prompt.md, specdeck-release-sync.prompt.md
+- **When** templates are installed in project
+- **Then** files exist under `.github/prompts/`
+- **And** files are installed in `.windsurf/workflows/` with `.md` extension
+- **And** each includes YAML frontmatter with `title`, `description`, and `version`
 
 #### Scenario: Windsurf workflow file naming
 - **Given** CLI bundles prompt templates with `.prompt.md` filenames
@@ -47,25 +46,6 @@ The CLI MUST provide a template explaining all story status values and transitio
 - **Then** the assistant references the template
 - **And** provides accurate status transition advice
 - **And** suggests appropriate next steps
-
-### Requirement: Commands Cheatsheet Template
-
-The CLI MUST provide a quick reference template for all SpecDeck commands.
-
-#### Scenario: Command reference available
-- **Given** CLI includes commands-cheatsheet.prompt.md template
-- **When** template is installed
-- **Then** file lists all SpecDeck CLI commands
-- **And** shows command syntax with examples
-- **And** includes common flag combinations
-- **And** groups commands by purpose (list, sync, init, upgrade)
-
-#### Scenario: Copilot suggests commands
-- **Given** cheatsheet template is in project
-- **When** user asks "how do I check story status?"
-- **Then** assistant references the cheatsheet
-- **And** suggests `specdeck sync status` command
-- **And** explains what the command does
 
 ### Requirement: Coordinator Jira Sync Prompt
 
@@ -141,4 +121,45 @@ The extension MUST track active and archived OpenSpec changes for sync awareness
 - **Then** all stories linked to that change are included
 - **And** sync status (planned vs done) is indicated
 - **And** suggestions for updates are available
+
+### Requirement: Release Creation Workflow Prompt
+The CLI MUST provide a prompt template that guides PMs to create a release from scope input using SpecDeck-first commands.
+
+#### Scenario: Prompt collects scope and calls CLI
+- **Given** `specdeck-release-create.prompt.md` is installed
+- **When** the user asks to create a release
+- **Then** the prompt gathers release scope (id, title, timeframe, objectives, success metrics, features)
+- **And** instructs running `specdeck releases create` with scope input
+- **And** does not require OpenSpec to be present
+
+### Requirement: Release Status Workflow Prompt
+The CLI MUST provide a prompt template for PM-ready release status collection and reporting.
+
+#### Scenario: Prompt generates release status summary
+- **Given** `specdeck-release-status.prompt.md` is installed
+- **When** the user asks for release status
+- **Then** the prompt runs `specdeck releases status <release-id> --json`
+- **And** summarizes progress, blockers, and risks from the output
+- **And** notes OpenSpec as an optional source (e.g., `--source openspec`)
+
+### Requirement: Release Sync Workflow Prompt
+The CLI MUST provide a prompt template for syncing release status with external trackers using MCP inputs.
+
+#### Scenario: Prompt guides Jira or Azure reconciliation
+- **Given** `specdeck-release-sync.prompt.md` is installed
+- **When** the user requests Jira or Azure sync via MCP
+- **Then** the prompt fetches external items via MCP, maps them to SpecDeck story IDs, and prepares an input file
+- **And** ensures a mapping file exists at `specdeck/mappings/<source>.json` and instructs the PM to update it
+- **And** runs `specdeck releases sync-plan <release-id> --source jira --input <file> --mapping specdeck/mappings/jira.json --json` (or `--source azure`)
+- **And** uses the plan to update the external system or SpecDeck based on the requested direction
+
+### Requirement: Coordinator Conflict Guidance
+The CLI MUST provide coordinator workflow guidance that clarifies cache-only sync and conflict handling expectations.
+
+#### Scenario: Coordinator workflow documents conflict policy
+- **Given** the coordinator setup workflow is installed
+- **When** the user follows coordinator-mode guidance
+- **Then** the workflow explains that `specdeck sync` is cache-only and does not write to submodules
+- **And** lists stop-and-ask conflicts (duplicate story IDs, invalid overlays, conflicting Jira mappings)
+- **And** instructs the user to resolve conflicts in the source repo before re-running sync
 

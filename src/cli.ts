@@ -16,6 +16,7 @@ import { createSyncCommand } from './commands/sync';
 import { createValidateStoryIdsCommand } from './commands/validate-story-ids';
 import { createJiraCommand } from './commands/jira';
 import { createStoriesCommand } from './commands/stories';
+import { createReleasesCommand } from './commands/releases';
 
 // Read version from package.json
 const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
@@ -50,6 +51,7 @@ program.addCommand(createOverlayCommand());
 program.addCommand(createSyncCommand());
 program.addCommand(createJiraCommand());
 program.addCommand(createStoriesCommand());
+program.addCommand(createReleasesCommand());
 
 // Parse arguments
 program.parse(process.argv);

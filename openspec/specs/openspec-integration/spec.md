@@ -67,105 +67,43 @@ The CLI MUST validate that stories reference existing OpenSpec changes and detec
 **And** tracks that one OpenSpec change maps to multiple stories
 
 ### Requirement: Sync Command for Status Reconciliation
-The CLI MUST provide a `specdeck sync` command that detects status mismatches and prompts for updates.
+The CLI MUST provide a sync-plan command that compares SpecDeck story statuses to OpenSpec change state and outputs a reconciliation plan.
 
-#### Scenario: Sync detects story needing status update
-**Given** story `FEAT-01-01` has status "planned"
-**And** OpenSpec column is "add-feature-x"
-**And** OpenSpec change `add-feature-x` exists and is active
-**When** user runs `specdeck sync`
-**Then** the CLI displays:
-```
-Found 1 story with potential status mismatch:
-  - FEAT-01-01: OpenSpec change 'add-feature-x' exists but story is 'planned'
-    Suggested status: in_progress
-Update story status? [y/N]
-```
-**And** waits for user input
+#### Scenario: Sync plan detects story needing status update
+**Given** story `FEAT-01-01` has status "planned"  
+**And** OpenSpec change `add-feature-x` exists and is active  
+**When** the user runs `specdeck releases sync-plan R1-foundation --source openspec`  
+**Then** the CLI outputs a suggested status update for `FEAT-01-01` (e.g., "in_progress")  
+**And** includes the reason "OpenSpec change is active"  
+**And** does not modify any files
 
-#### Scenario: User confirms status update
-**Given** sync detected a mismatch for `FEAT-01-01`
-**And** user types "y" at the prompt
-**When** confirmation is received
-**Then** the CLI updates `project-plan.md`
-**And** changes story status from "planned" to "in_progress"
-**And** displays "✓ Updated FEAT-01-01 to in_progress"
-
-#### Scenario: User declines status update
-**Given** sync detected a mismatch
-**And** user types "N" or presses Enter
-**When** confirmation is declined
-**Then** the CLI displays "Skipped"
-**And** does not modify project-plan.md
-**And** continues to next mismatch if any
-
-#### Scenario: Sync detects archived change
-**Given** story `FEAT-01-02` has status "in_progress"
-**And** OpenSpec change is archived in `changes/archive/`
-**When** user runs `specdeck sync`
-**Then** the CLI suggests changing status to "done"
-**And** prompts for confirmation
-
-#### Scenario: Sync with no mismatches
-**Given** all stories have status matching their OpenSpec change state
-**When** user runs `specdeck sync`
-**Then** the CLI displays "All stories are in sync with OpenSpec changes"
+#### Scenario: Sync plan with JSON output
+**Given** OpenSpec changes exist for stories in `R1-foundation`  
+**When** the user runs `specdeck releases sync-plan R1-foundation --source openspec --json`  
+**Then** the output is a JSON array of proposed updates  
+**And** each entry includes storyId, currentStatus, suggestedStatus, and reason  
 **And** exits with code 0
 
-#### Scenario: Sync specific story
-**Given** user runs `specdeck sync --story FEAT-01-01`
-**When** the command executes
-**Then** it only checks and updates the specified story
-**And** ignores other stories
-
-#### Scenario: Sync dry-run mode
-**Given** user runs `specdeck sync --dry-run`
-**When** the command detects mismatches
-**Then** it displays what would be updated
-**And** does not prompt for confirmation
-**And** does not modify project-plan.md
+#### Scenario: Sync plan with no mismatches
+**Given** all stories in `R1-foundation` match their OpenSpec change state  
+**When** the user runs `specdeck releases sync-plan R1-foundation --source openspec`  
+**Then** the CLI displays "No OpenSpec status mismatches found"  
+**And** exits with code 0
 
 ### Requirement: Display Status Hints in Commands
-The CLI MUST show visual indicators when story status doesn't match OpenSpec change state.
+The CLI MUST show OpenSpec-derived status hints only when explicitly requested.
 
-#### Scenario: List stories with status hints
-**Given** feature `FEAT-01` has 3 stories
-**And** story `FEAT-01-01` is "planned" but OpenSpec change exists
-**And** story `FEAT-01-02` is "in_progress" and change exists (matching)
-**And** story `FEAT-01-03` is "in_progress" but change is archived
-**When** user runs `specdeck stories list FEAT-01`
-**Then** the output displays:
-```
-┌────────────┬──────────────────┬─────────────┬────────────┬────────┐
-│ ID         │ Title            │ Status      │ OpenSpec   │ Hint   │
-├────────────┼──────────────────┼─────────────┼────────────┼────────┤
-│ FEAT-01-01 │ Story one        │ planned     │ change-x   │ ⚠️ CHG │
-│ FEAT-01-02 │ Story two        │ in_progress │ change-y   │        │
-│ FEAT-01-03 │ Story three      │ in_progress │ change-z   │ ⚠️ ARC │
-└────────────┴──────────────────┴─────────────┴────────────┴────────┘
+#### Scenario: Release status includes OpenSpec hints when requested
+**Given** release `R1-foundation` has stories linked to OpenSpec changes  
+**When** the user runs `specdeck releases status R1-foundation --source openspec`  
+**Then** the output includes per-story OpenSpec state and mismatch hints  
+**And** suggests running `specdeck releases sync-plan R1-foundation --source openspec` for details
 
-Legend: ⚠️ CHG = Change exists, ⚠️ ARC = Change archived
-Run 'specdeck sync' to reconcile status
-```
-
-#### Scenario: Show story with status hint details
-**Given** story `FEAT-01-01` has a status mismatch
-**When** user runs `specdeck stories show FEAT-01-01`
-**Then** the output includes a status check section:
-```
-OpenSpec Status Check:
-  Change: add-feature-x
-  State: Active (exists in changes/)
-  Story Status: planned
-  ⚠️  Mismatch detected: Change exists but story is 'planned'
-  Suggestion: Run 'specdeck sync --story FEAT-01-01'
-```
-
-#### Scenario: Disable hints flag
-**Given** user runs `specdeck stories list FEAT-01 --no-hints`
-**When** the command executes
-**Then** no status hints are displayed
-**And** output shows basic story information only
+#### Scenario: Hints are disabled by default
+**Given** OpenSpec changes exist  
+**When** the user runs `specdeck releases status R1-foundation` without `--source openspec`  
+**Then** no OpenSpec hints are shown  
+**And** the command remains SpecDeck-only
 
 ### Requirement: OpenSpec Change Discovery
 The CLI MUST efficiently discover and cache OpenSpec change information during command execution.
@@ -226,4 +164,21 @@ The CLI MUST apply consistent rules for mapping OpenSpec change state to story s
 **When** sync evaluates
 **Then** it does not suggest automatic status changes
 **And** respects that blocked requires manual intervention
+
+### Requirement: Optional OpenSpec Status Source
+The CLI MUST treat OpenSpec as an optional status source and degrade gracefully when it is missing.
+
+#### Scenario: OpenSpec missing but requested
+**Given** `openspec/changes/` does not exist  
+**When** the user runs `specdeck releases status R1-foundation --source openspec`  
+**Then** the CLI warns that OpenSpec is unavailable  
+**And** continues with SpecDeck-only status  
+**And** exits with code 0
+
+#### Scenario: OpenSpec missing for sync plan
+**Given** `openspec/changes/` does not exist  
+**When** the user runs `specdeck releases sync-plan R1-foundation --source openspec`  
+**Then** the CLI warns that OpenSpec is unavailable  
+**And** returns an empty plan  
+**And** exits with code 0
 

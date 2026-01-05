@@ -56,7 +56,7 @@ describe('upgrade command', () => {
       targets: string[];
     };
     expect(versionInfo.templates).toContain('specdeck-jira-sync.prompt.md');
-    expect(versionInfo.version).toBe('0.3.0');
+    expect(versionInfo.version).toBe('0.4.0');
     expect(versionInfo.targets).toEqual(expect.arrayContaining(['copilot', 'windsurf']));
 
     logSpy.mockRestore();

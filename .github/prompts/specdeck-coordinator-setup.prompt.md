@@ -526,4 +526,4 @@ specdeck list stories --repo <name>
 - `@specdeck/AGENTS.md` → "Coordinator Mode" (workflows)
 - `@specdeck/AGENTS.md` → "File Structure" (directory layout)
 - `@.github/prompts/specdeck-migrate-feature.prompt.md` → Migrate features to submodules
-- `@.github/prompts/specdeck-commands.prompt.md` → CLI commands reference
+- `@specdeck/AGENTS.md` → CLI commands reference
